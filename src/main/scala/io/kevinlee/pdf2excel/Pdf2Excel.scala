@@ -12,8 +12,9 @@ import io.kevinlee.parsers.Parsers._
 import net.ceedubs.ficus.Ficus._
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
-import scalaz.Scalaz._
+
 import scalaz._
+import Scalaz._
 
 object Pdf2Excel {
 
