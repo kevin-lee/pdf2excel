@@ -8,13 +8,11 @@ import com.typesafe.config.ConfigFactory
 import fastparse.all._
 import fastparse.core.Parsed.Success
 import info.folone.scala.poi.{NumericCell, Row, Sheet, StringCell, Workbook}
-import io.kevinlee.parsers.Parsers._
+import io.kevinlee.parsers.Parsers.{alphabets, digits, numbers, spaces, stringChars}
 import net.ceedubs.ficus.Ficus._
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
-
-import scalaz._
-import Scalaz._
+import scalaz.Scalaz._
 
 object Pdf2Excel {
 
@@ -43,7 +41,7 @@ object Pdf2Excel {
          |""".stripMargin
   }
 
-  def handlePage(transactionStart: String, page: List[String]): Option[TransactionDoc] = {
+  def handlePage(transactionStart: String, page: Seq[String]): Option[TransactionDoc] = {
     val lines = page.dropWhile(line => line != transactionStart)
     if (lines.isEmpty) {
       None
@@ -53,6 +51,7 @@ object Pdf2Excel {
       }
       val lineP = date ~ spaces.rep ~ date ~ spaces.rep ~ (alphabets ~ digits.rep).! ~ spaces.rep ~ stringChars.! ~ End
       val header = buildHeader(lines.tail.take(6))
+
 
       val content =
         lines.drop(7)
@@ -107,14 +106,19 @@ object Pdf2Excel {
       stripper.getText(pdf).trim
   }
 
-
   def main(args: Array[String]): Unit = {
     val config = ConfigFactory.load()
-    val transactionStart = config.as[String]("statement.transaction.start")
-
-    val inputFile = config.as[String]("statement.path")
+    val pdfConfig = config.getConfig("pdf")
+    val transactionStart = pdfConfig.as[String]("transaction.start")
+    val inputFile = pdfConfig.as[String]("path")
     val outputFile = config.as[String]("excel.path")
-    val fromTo = config.as[Option[Int]]("statement.from").flatMap(from => config.as[Option[Int]]("statement.to").map(to => FromTo(from, to)))
+
+    val fromTo: Option[FromTo] = for {
+        from <- pdfConfig.getAs[Int]("from")
+        to <- pdfConfig.getAs[Int]("to")
+        theFromTo = FromTo(from, to)
+      } yield theFromTo
+
     val pages = convertToText(inputFile, fromTo)
     val sequence: Option[List[TransactionDoc]] = pages.map(handlePage(transactionStart, _)).filter(_.isDefined).sequence
     val maybeDoc: Option[TransactionDoc] = sequence.map(_.reduce((x, y) => x.copy(content = x.content ++ y.content)))
