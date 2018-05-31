@@ -6,14 +6,17 @@ import fastparse.all._
   * @author Kevin Lee
   * @since 2018-03-04
   */
+@SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
 object Parsers {
 
-  case class NamedFunction[T, V](f: T => V, name: String) extends (T => V) {
+  final case class NamedFunction[T, V](f: T => V, name: String) extends (T => V) {
     def apply(t: T) = f(t)
     override val toString: String = name
   }
 
-  val Digit: NamedFunction[Char, Boolean] =
+  type CharToParse = NamedFunction[Char, Boolean]
+
+  val Digit: CharToParse =
     NamedFunction('0' to '9' contains (_: Char), "Digit")
   val digits: P[Unit] = P(CharsWhile(Digit))
 
@@ -25,21 +28,21 @@ object Parsers {
     P(CharIn("+-").? ~ integral ~ factional.? ~ expondent.?).!.map(BigDecimal(_))
 
 
-  val Whitespace: NamedFunction[Char, Boolean] =
+  val Whitespace: CharToParse =
     NamedFunction(" \t" contains (_: Char), "Whitespace")
   val spaces: P[Unit] = P(CharsWhile(Whitespace))
 
-  val NewLines: NamedFunction[Char, Boolean] =
+  val NewLines: CharToParse =
     NamedFunction("\r\n" contains (_: Char), "Whitespace")
   val newLines: P[Unit] = P(CharsWhile(NewLines))
 
-  val AlphabetLower: NamedFunction[Char, Boolean] =
+  val AlphabetLower: CharToParse =
     NamedFunction('a' to 'z' contains (_: Char), "AlphabetLower")
 
-  val AlphabetUpper: NamedFunction[Char, Boolean] =
+  val AlphabetUpper: CharToParse =
     NamedFunction('A' to 'Z' contains (_: Char), "AlphabetUpper")
 
-  val StringChar: NamedFunction[Char, Boolean] =
+  val StringChar: CharToParse =
     NamedFunction(!"''\\".contains(_: Char), "StringChar")
 
   val alphabetsLower: P[String] = P(CharsWhile(AlphabetLower).!)

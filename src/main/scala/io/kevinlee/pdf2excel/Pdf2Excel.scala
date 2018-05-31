@@ -9,30 +9,33 @@ import fastparse.all._
 import fastparse.core.Parsed.Success
 import info.folone.scala.poi.{NumericCell, Row, Sheet, StringCell, Workbook}
 import io.kevinlee.parsers.Parsers.{alphabets, digits, numbers, spaces, stringChars}
+import io.kevinlee.skala.strings.StringGlues._
 import net.ceedubs.ficus.Ficus._
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
-import scalaz.Scalaz._
+import scalaz._
+import Scalaz._
 
 object Pdf2Excel {
 
-  case class FromTo(from: Int, to: Int)
+  final case class FromTo(from: Int, to: Int)
 
-  case class Header(dateProcessed: String,
-                    dateOfTransaction: String,
-                    cardNo: String,
-                    details: String,
-                    amount: String) {
+  final case class Header(dateProcessed: String,
+                          dateOfTransaction: String,
+                          cardNo: String,
+                          details: String,
+                          amount: String) {
     def toSeq: Seq[String] = Vector(dateOfTransaction, details, amount)
   }
-  case class Transaction(dateProcessed: LocalDate,
-                         dateOfTransaction: LocalDate,
-                         cardNo: String,
-                         details: String,
-                         amount: BigDecimal) {
-    def toSeq = Vector(dateOfTransaction, details, amount)
-  }
-  case class TransactionDoc(header: Header, content: List[Transaction]) {
+
+  final case class Transaction(dateProcessed: LocalDate,
+                               dateOfTransaction: LocalDate,
+                               cardNo: String,
+                               details: String,
+                               amount: BigDecimal)
+
+  final case class TransactionDoc(header: Header, content: List[Transaction]) {
+    @SuppressWarnings(Array("org.wartremover.warts.ToString"))
     lazy override val toString: String =
       s"""TransactionDoc(
          |  $header,
@@ -42,34 +45,33 @@ object Pdf2Excel {
   }
 
   def handlePage(transactionStart: String, page: Seq[String]): Option[TransactionDoc] = {
-    val lines = page.dropWhile(line => line != transactionStart)
+    val lines = page.dropWhile(line => line =/= transactionStart)
     if (lines.isEmpty) {
       None
     } else {
-      val date = P(digits.rep.! ~ "/" ~ digits.rep.! ~ "/" ~ digits.rep.!).map { case (date, month, year) =>
-          LocalDate.parse(s"${LocalDate.now().getYear / 100}$year-$month-$date")
+      val date = P(digits.rep.! ~ "/" ~ digits.rep.! ~ "/" ~ digits.rep.!).map { case (day, month, year) =>
+          LocalDate.parse(s"${LocalDate.now().getYear / 100}$year-$month-$day")
       }
       val lineP = date ~ spaces.rep ~ date ~ spaces.rep ~ (alphabets ~ digits.rep).! ~ spaces.rep ~ stringChars.! ~ End
-      val header = buildHeader(lines.tail.take(6))
-
+      val header = buildHeader(lines.slice(1, 7))
 
       val content =
         lines.drop(7)
-        .foldLeft(Vector.empty[Transaction])((acc, x) => {
-          lineP.parse(x.trim) match {
-            case Success((dateProcessed, dateOfTransaction, cardNo, detailsAndAmount), _) =>
-              val splitted = detailsAndAmount.split("[\\s]+")
-              val last = splitted.last
-              numbers.parse(last) match {
-                case Success(price, _) =>
-                  acc :+ Transaction(dateProcessed, dateOfTransaction, cardNo, splitted.init.mkString(" "), price)
-                case _ =>
-                  acc
-              }
-            case _ =>
-              acc
-          }
-        }).toList
+             .foldLeft(Vector.empty[Transaction]) { (acc, x) =>
+               lineP.parse(x.trim) match {
+                 case Success((dateProcessed, dateOfTransaction, cardNo, detailsAndAmount), _) =>
+                   val splitted = detailsAndAmount.split("[\\s]+")
+                   val last = splitted.last
+                   numbers.parse(last) match {
+                     case Success(price, _) =>
+                       acc :+ Transaction(dateProcessed, dateOfTransaction, cardNo, splitted.init.mkString(" "), price)
+                     case _ =>
+                       acc
+                   }
+                 case _ =>
+                   acc
+               }
+             }.toList
       Some(TransactionDoc(header, content))
     }
   }
@@ -84,13 +86,16 @@ object Pdf2Excel {
     Header(dateProcessed, dateOfTransaction, cardNo, details, amount)
   }
 
-  def convertToText(filename: String,
+  def convertToText(inputFile: File,
                     fromTo: Option[FromTo]): List[List[String]] = {
 
     import io.kevinlee.skala.util.TryWith.SideEffect.tryWith
 
-    tryWith(PDDocument.load(new File(filename))) { pdf =>
-      val (startPage, endPage) = fromTo.fold((1, pdf.getNumberOfPages)){ fromTo => (fromTo.from, fromTo.to) }
+    tryWith(PDDocument.load(inputFile)) { pdf =>
+      val (startPage, endPage) =
+        fromTo.fold((1, pdf.getNumberOfPages)){ fromTo =>
+          (fromTo.from, fromTo.to)
+        }
 
       (for {
         page <- startPage to endPage
@@ -106,12 +111,52 @@ object Pdf2Excel {
       stripper.getText(pdf).trim
   }
 
+  private def writeExcel(transactionDoc: TransactionDoc, outputPath: String): Unit = {
+    val headerPosition = 2
+    val rowPositionOffet = headerPosition + 1
+    val sheetOne = Workbook {
+      Set(
+        Sheet(s"Credit Card ${LocalDateTime.now().toString("yyyy-MM")}") {
+          Set(
+            Row(headerPosition) {
+              transactionDoc.header.toSeq.zipWithIndex.map { case (x, i) =>
+                StringCell(i, x)
+              }.toSet
+            }
+          ) ++ (for {
+            (trans, i) <- transactionDoc.content.zipWithIndex
+            row = Row(i + rowPositionOffet) {
+              val _@Transaction(_, dateOfTransaction, _, details, amount) = trans
+              Set(
+                StringCell(0, dateOfTransaction.toString),
+                StringCell(1, details),
+                NumericCell(2, amount.toDouble)
+              )
+            }
+          } yield row).toSet
+        }
+      )
+    }
+    sheetOne.safeToFile(outputPath).fold(ex ⇒ sys.error(ex.getMessage), identity).unsafePerformIO
+  }
+
+  private val FilenameAndExt = "(.+)[\\.]([^\\.]+)$".r
+  private def replaceFileExtension(filename: String, newExt: String): String =
+    filename match {
+      case FilenameAndExt(name, _) =>
+        s"$name.$newExt"
+      case _ =>
+        s"$filename.$newExt"
+    }
+
   def main(args: Array[String]): Unit = {
     val config = ConfigFactory.load()
     val pdfConfig = config.getConfig("pdf")
     val transactionStart = pdfConfig.as[String]("transaction.start")
-    val inputFile = pdfConfig.as[String]("path")
-    val outputFile = config.as[String]("excel.path")
+    val inputFilename = pdfConfig.as[String]("path")
+    val outputDir = config.as[String]("excel.path")
+    val inputFile = new File(inputFilename)
+    val outputPath = outputDir / replaceFileExtension(inputFile.getName, "xls")
 
     val fromTo: Option[FromTo] = for {
         from <- pdfConfig.getAs[Int]("from")
@@ -121,39 +166,15 @@ object Pdf2Excel {
 
     val pages = convertToText(inputFile, fromTo)
     val sequence: Option[List[TransactionDoc]] = pages.map(handlePage(transactionStart, _)).filter(_.isDefined).sequence
-    val maybeDoc: Option[TransactionDoc] = sequence.map(_.reduce((x, y) => x.copy(content = x.content ++ y.content)))
+    val maybeDoc: Option[TransactionDoc] =
+      sequence.flatMap(_.reduceLeftOption((x, y) => x.copy(content = x.content ++ y.content)))
 
     println(
       s"""maybeDoc: $maybeDoc
-         |""".stripMargin)
-    maybeDoc.foreach { statementDoc =>
-      val headerPosition = 2
-      val rowPositionOffet = headerPosition + 1
-      val sheetOne = Workbook {
-        Set(
-          Sheet(s"Credit Card ${LocalDateTime.now().toString("yyyy-MM")}") {
-            Set(
-              Row(headerPosition) {
-                statementDoc.header.toSeq.zipWithIndex.map { case (x, i) => StringCell(i, x) }.toSet
-              }
-            ) ++ (for {
-              (trans, i) <- statementDoc.content.zipWithIndex
-              row = Row(i + rowPositionOffet) {
-                (for {
-                  (value, i) <- trans.toSeq.zipWithIndex
-                  cell = value match {
-                    case amount: BigDecimal => NumericCell(i, amount.toDouble)
-                    case _ =>
-                      StringCell(i, value.toString)
-                  }
-                } yield cell).toSet
-              }
-            } yield row).toSet
-          }
-        )
-      }
-      sheetOne.safeToFile(outputFile).fold(ex ⇒ throw ex, identity).unsafePerformIO
-    }
+         |""".stripMargin
+    )
+    println(s"Write to $outputPath")
+    maybeDoc.foreach(transactionDoc => writeExcel(transactionDoc, outputPath))
   }
 
 }
