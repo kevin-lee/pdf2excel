@@ -8,7 +8,7 @@ import com.typesafe.config.ConfigFactory
 import fastparse.all._
 import fastparse.core.Parsed.Success
 import info.folone.scala.poi.{NumericCell, Row, Sheet, StringCell, Workbook}
-import io.kevinlee.parsers.Parsers.{alphabets, digits, numbers, spaces, stringChars}
+import io.kevinlee.parsers.Parsers.{alphabets, digits, monetaryNumbers, spaces, stringChars}
 import io.kevinlee.skala.strings.StringGlues._
 import net.ceedubs.ficus.Ficus._
 import org.apache.pdfbox.pdmodel.PDDocument
@@ -62,7 +62,7 @@ object Pdf2Excel {
                  case Success((dateProcessed, dateOfTransaction, cardNo, detailsAndAmount), _) =>
                    val splitted = detailsAndAmount.split("[\\s]+")
                    val last = splitted.last
-                   numbers.parse(last) match {
+                   monetaryNumbers.parse(last) match {
                      case Success(price, _) =>
                        acc :+ Transaction(dateProcessed, dateOfTransaction, cardNo, splitted.init.mkString(" "), price)
                      case _ =>
