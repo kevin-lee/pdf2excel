@@ -25,7 +25,17 @@ object Parsers {
   val integral: P[Unit] = P(("0" | CharIn('1' to '9')) ~ digits.?)
 
   val numbers: P[BigDecimal] =
-    P(CharIn("+-").? ~ integral ~ factional.? ~ expondent.?).!.map(BigDecimal(_))
+    P(CharIn("+-").? ~ integral ~ factional.? ~ expondent.?).!.
+      map(BigDecimal(_))
+
+  /* digit,digit
+   * e.g.) 000,000 or 000
+   */
+  val monetaryDigits: P[Unit] = P(integral ~ ("," ~ integral.rep(min = 1)).?)
+
+  val monetaryNumbers: P[BigDecimal] =
+    P(CharIn("+-").? ~ monetaryDigits.rep(min = 1) ~ factional.? ~ expondent.?).!.
+      map(x => BigDecimal(x.replaceAllLiterally(",", "")))
 
 
   val Whitespace: CharToParse =
