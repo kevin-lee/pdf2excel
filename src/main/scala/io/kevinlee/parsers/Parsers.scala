@@ -10,7 +10,7 @@ import fastparse.all._
 object Parsers {
 
   final case class NamedFunction[T, V](f: T => V, name: String) extends (T => V) {
-    def apply(t: T) = f(t)
+    def apply(t: T): V = f(t)
     override val toString: String = name
   }
 
@@ -42,6 +42,10 @@ object Parsers {
     NamedFunction(" \t" contains (_: Char), "Whitespace")
   val spaces: P[Unit] = P(CharsWhile(Whitespace))
 
+  val NonWhitespace: CharToParse =
+    NamedFunction(c => !Whitespace(c), "NonWhitespace")
+  val notSpaces: P[Unit] = P(CharsWhile(NonWhitespace))
+
   val NewLines: CharToParse =
     NamedFunction("\r\n" contains (_: Char), "Whitespace")
   val newLines: P[Unit] = P(CharsWhile(NewLines))
@@ -54,6 +58,9 @@ object Parsers {
 
   val StringChar: CharToParse =
     NamedFunction(!"''\\".contains(_: Char), "StringChar")
+
+  val NonWhitespaceStringChar: CharToParse =
+    NamedFunction(c => NonWhitespace(c) && !StringChar(c), "NonWhitespaceStringChar")
 
   val alphabetsLower: P[String] = P(CharsWhile(AlphabetLower).!)
 
@@ -72,5 +79,7 @@ object Parsers {
 
   val stringChars: P[String] = P(CharsWhile(StringChar)).!
   val strings: P[String] = P("'" ~/ (stringChars | escape).rep.map(_.mkString) ~ "'")
+
+  val nonWhiteSpaceStringChars: P[String] = P(CharsWhile(NonWhitespaceStringChar)).!
 
 }

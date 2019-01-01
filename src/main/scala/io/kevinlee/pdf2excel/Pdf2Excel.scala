@@ -5,16 +5,14 @@ import java.io.File
 
 import com.github.nscala_time.time.Imports._
 import com.typesafe.config.ConfigFactory
-import fastparse.all._
-import fastparse.core.Parsed.Success
 import info.folone.scala.poi.{NumericCell, Row, Sheet, StringCell, Workbook}
-import io.kevinlee.parsers.Parsers.{alphabets, digits, monetaryNumbers, spaces, stringChars}
 import io.kevinlee.skala.strings.StringGlues._
 import net.ceedubs.ficus.Ficus._
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
 import scalaz._
 import Scalaz._
+import io.kevinlee.pdf2excel.pagehandler.PageHandler2
 
 object Pdf2Excel {
 
@@ -34,7 +32,7 @@ object Pdf2Excel {
                                details: String,
                                amount: BigDecimal)
 
-  final case class TransactionDoc(header: Header, content: List[Transaction]) {
+  final case class TransactionDoc(header: Header, content: Seq[Transaction]) {
     @SuppressWarnings(Array("org.wartremover.warts.ToString"))
     lazy override val toString: String =
       s"""TransactionDoc(
@@ -44,47 +42,13 @@ object Pdf2Excel {
          |""".stripMargin
   }
 
-  def handlePage(transactionStart: String, page: Seq[String]): Option[TransactionDoc] = {
-    val lines = page.dropWhile(line => line =/= transactionStart)
-    if (lines.isEmpty) {
-      None
-    } else {
-      val date = P(digits.rep.! ~ "/" ~ digits.rep.! ~ "/" ~ digits.rep.!).map { case (day, month, year) =>
-          LocalDate.parse(s"${LocalDate.now().getYear / 100}$year-$month-$day")
-      }
-      val lineP = date ~ spaces.rep ~ date ~ spaces.rep ~ (alphabets ~ digits.rep).! ~ spaces.rep ~ stringChars.! ~ End
-      val header = buildHeader(lines.slice(1, 7))
-
-      val content =
-        lines.drop(7)
-             .foldLeft(Vector.empty[Transaction]) { (acc, x) =>
-               lineP.parse(x.trim) match {
-                 case Success((dateProcessed, dateOfTransaction, cardNo, detailsAndAmount), _) =>
-                   val splitted = detailsAndAmount.split("[\\s]+")
-                   val last = splitted.last
-                   monetaryNumbers.parse(last) match {
-                     case Success(price, _) =>
-                       acc :+ Transaction(dateProcessed, dateOfTransaction, cardNo, splitted.init.mkString(" "), price)
-                     case _ =>
-                       acc
-                   }
-                 case _ =>
-                   acc
-               }
-             }.toList
-      Some(TransactionDoc(header, content))
-    }
+  def handlePages(f: Seq[String] => Option[TransactionDoc], pages: List[Seq[String]]): Option[TransactionDoc] = {
+    val sequence: Option[List[TransactionDoc]] = pages.map(f).filter(_.isDefined).sequence
+    val maybeDoc: Option[TransactionDoc] =
+      sequence.flatMap(_.reduceLeftOption((x, y) => x.copy(content = x.content ++ y.content)))
+    maybeDoc
   }
 
-  def buildHeader(header: Seq[String]): Header = {
-    val dateProcessed = s"${header(0)} ${header(1)}"
-    val dateOfTransaction = s"${header(2)} ${header(3)}"
-    val rest = header(5).split("[\\s]+")
-    val cardNo = s"${header(4)} ${rest(0)}"
-    val details = rest(1)
-    val amount = s"${rest(2)} ${rest(3)}"
-    Header(dateProcessed, dateOfTransaction, cardNo, details, amount)
-  }
 
   def convertToText(inputFile: File,
                     fromTo: Option[FromTo]): List[List[String]] = {
@@ -93,9 +57,7 @@ object Pdf2Excel {
 
     tryWith(PDDocument.load(inputFile)) { pdf =>
       val (startPage, endPage) =
-        fromTo.fold((1, pdf.getNumberOfPages)){ fromTo =>
-          (fromTo.from, fromTo.to)
-        }
+        fromTo.fold((1, pdf.getNumberOfPages))(fromTo => (fromTo.from, fromTo.to))
 
       (for {
         page <- startPage to endPage
@@ -152,7 +114,6 @@ object Pdf2Excel {
   def main(args: Array[String]): Unit = {
     val config = ConfigFactory.load()
     val pdfConfig = config.getConfig("pdf")
-    val transactionStart = pdfConfig.as[String]("transaction.start")
     val inputFilename = pdfConfig.as[String]("path")
     val outputDir = config.as[String]("excel.path")
     val inputFile = new File(inputFilename)
@@ -165,9 +126,11 @@ object Pdf2Excel {
       } yield theFromTo
 
     val pages = convertToText(inputFile, fromTo)
-    val sequence: Option[List[TransactionDoc]] = pages.map(handlePage(transactionStart, _)).filter(_.isDefined).sequence
-    val maybeDoc: Option[TransactionDoc] =
-      sequence.flatMap(_.reduceLeftOption((x, y) => x.copy(content = x.content ++ y.content)))
+
+
+    // TODO: get it from parameter or config file
+//    val maybeDoc: Option[TransactionDoc] = handlePages(PageHandler1, pages)
+    val maybeDoc: Option[TransactionDoc] = handlePages(PageHandler2, pages)
 
     println(
       s"""maybeDoc: $maybeDoc
