@@ -9,6 +9,13 @@ import fastparse.all._
 @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
 object Parsers {
 
+  def isSuccess[T](parsed: Parsed[T]): Boolean = parsed match {
+    case Parsed.Success(_, _) => true
+    case Parsed.Failure(_, _, _) => false
+  }
+
+  def isFailure[T](parsed: Parsed[T]): Boolean = !isSuccess(parsed)
+
   final case class NamedFunction[T, V](f: T => V, name: String) extends (T => V) {
     def apply(t: T): V = f(t)
     override val toString: String = name

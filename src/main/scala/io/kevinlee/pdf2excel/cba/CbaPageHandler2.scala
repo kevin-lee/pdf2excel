@@ -1,31 +1,32 @@
-package io.kevinlee.pdf2excel.pagehandler
+package io.kevinlee.pdf2excel.cba
 
 import com.github.nscala_time.time.Imports.LocalDate
 
 import fastparse.all._
 
 import io.kevinlee.parsers.Parsers._
-import io.kevinlee.pdf2excel.Pdf2Excel.{Header, Transaction, TransactionDoc}
+import io.kevinlee.pdf2excel.{Header, PageHandler, Transaction, TransactionDoc}
 
 import scalaz._, Scalaz._
 
 import scala.annotation.tailrec
 
 /**
+  * Since April 2019, this should be used instead of CbaPageHandler
   * @author Kevin Lee
-  * @since 2018-09-30
+  * @since 2019-04-27
   */
-case object PageHandler2 extends PageHandler[TransactionDoc] {
+case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
 
-  val transactionStart: String = "Transactions"
+  private val transactionStart: String = "Transactions"
+  private val lastLines: List[String] = List("Interest charged on purchases", "Interest charged on cash advances")
 
   def buildHeader(header: String): Header = {
     val headerColumns = header.split("[\\s]+")
     val date = headerColumns(0)
     val details = s"${headerColumns(1)} ${headerColumns(2)}"
-    val cardNo = s"${headerColumns(3)} ${headerColumns(4)}"
-    val amount = s"${headerColumns(5)} ${headerColumns(6)}"
-    Header(date, date, cardNo, details, amount)
+    val amount = s"${headerColumns(3)} ${headerColumns(4)}"
+    Header(date, date, details, amount)
   }
 
   @tailrec
@@ -66,7 +67,7 @@ case object PageHandler2 extends PageHandler[TransactionDoc] {
 
       val lineP =
         date ~ spaces.rep ~ AnyChar.rep(1).! ~ End
-      val header = lines.headOption.map(buildHeader).getOrElse(Header("", "", "", "", ""))
+      val header = lines.headOption.map(buildHeader).getOrElse(Header("", "", "", ""))
 
       @tailrec
       def processLine(lines: Seq[String], acc: Seq[Transaction]): Seq[Transaction] = lines match {
@@ -77,18 +78,22 @@ case object PageHandler2 extends PageHandler[TransactionDoc] {
           lineP.parse(line) match {
             case Parsed.Success((d, a), _) =>
               val (twoMoreLines, rest) = xs.splitAt(2)
-              if (twoMoreLines.length === 2 && twoMoreLines(1).trim.startsWith("Mastercard")) {
-                processLine(s"$line ${twoMoreLines.map(_.trim).mkString(" ")}" :: rest, acc)
+
+              if (twoMoreLines.length === 2 && isFailure(lineP.parse(twoMoreLines(0).trim))) {
+                if (twoMoreLines === lastLines) {
+                  processLine(s"$line" :: Nil, acc)
+                } else {
+                  processLine(s"$line ${twoMoreLines.map(_.trim).mkString(" ")}" :: rest, acc)
+                }
               } else {
                 val words = a.split("[\\s]+").map(_.trim)
-                val (details, Array(card, amount)) = words.splitAt(words.length - 2)
+                val (details, Array(amount)) = words.splitAt(words.length - 1)
                 val filteredAmount = amount.replaceAllLiterally(",", "")
                 processLine(
                   xs,
                   acc :+ Transaction(
                     d,
                     d,
-                    card,
                     details.mkString(" "),
                     BigDecimal(
                       if (filteredAmount.endsWith("-"))

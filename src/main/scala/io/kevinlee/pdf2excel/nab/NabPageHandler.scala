@@ -1,12 +1,11 @@
-package io.kevinlee.pdf2excel.pagehandler
+package io.kevinlee.pdf2excel.nab
 
 import com.github.nscala_time.time.Imports.LocalDate
 
 import fastparse.all._
-import fastparse.core.Parsed.Success
 
 import io.kevinlee.parsers.Parsers.{alphabets, digits, monetaryNumbers, spaces, stringChars}
-import io.kevinlee.pdf2excel.Pdf2Excel.{Header, Transaction, TransactionDoc}
+import io.kevinlee.pdf2excel.{Header, PageHandler, Transaction, TransactionDoc}
 
 import scalaz._, Scalaz._
 
@@ -14,7 +13,7 @@ import scalaz._, Scalaz._
   * @author Kevin Lee
   * @since 2018-09-30
   */
-case object PageHandler1 extends PageHandler[TransactionDoc] {
+case object NabPageHandler extends PageHandler[TransactionDoc] {
 
   val transactionStart: String = "Transaction details"
 
@@ -22,10 +21,10 @@ case object PageHandler1 extends PageHandler[TransactionDoc] {
     val dateProcessed = s"${header(0)} ${header(1)}"
     val dateOfTransaction = s"${header(2)} ${header(3)}"
     val rest = header(5).split("[\\s]+")
-    val cardNo = s"${header(4)} ${rest(0)}"
+//    val cardNo = s"${header(4)} ${rest(0)}"
     val details = rest(1)
     val amount = s"${rest(2)} ${rest(3)}"
-    Header(dateProcessed, dateOfTransaction, cardNo, details, amount)
+    Header(dateProcessed, dateOfTransaction, details, amount)
   }
 
   def apply(page: Seq[String]): Option[TransactionDoc] = {
@@ -43,12 +42,12 @@ case object PageHandler1 extends PageHandler[TransactionDoc] {
         lines.drop(7)
           .foldLeft(Vector.empty[Transaction]) { (acc, x) =>
             lineP.parse(x.trim) match {
-              case Success((dateProcessed, dateOfTransaction, cardNo, detailsAndAmount), _) =>
+              case Parsed.Success((dateProcessed, dateOfTransaction, cardNo, detailsAndAmount), _) =>
                 val splitted = detailsAndAmount.split("[\\s]+")
                 val last = splitted.last
                 monetaryNumbers.parse(last) match {
-                  case Success(price, _) =>
-                    acc :+ Transaction(dateProcessed, dateOfTransaction, cardNo, splitted.init.mkString(" "), price)
+                  case Parsed.Success(price, _) =>
+                    acc :+ Transaction(dateProcessed, dateOfTransaction, splitted.init.mkString(" "), price)
                   case _ =>
                     acc
                 }

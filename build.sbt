@@ -31,8 +31,6 @@ lazy val root = (project in file(".")).
     resolvers += "3rd Party Repo" at "http://dl.bintray.com/kevinlee/maven",
 
     libraryDependencies ++= Seq(
-      "com.novocode" % "junit-interface" % "0.11" % Test,
-
       "org.apache.pdfbox" % "pdfbox" % "2.0.8",
 
 //      ("org.scalaz" %% "scalaz-core" % "7.2.23").withDottyCompat(scalaVersion.value),

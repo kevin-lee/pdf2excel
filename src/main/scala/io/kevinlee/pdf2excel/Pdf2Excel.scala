@@ -1,46 +1,26 @@
 package io.kevinlee.pdf2excel
 
-
 import java.io.File
 
 import com.github.nscala_time.time.Imports._
 import com.typesafe.config.ConfigFactory
+
 import info.folone.scala.poi.{NumericCell, Row, Sheet, StringCell, Workbook}
+
 import io.kevinlee.skala.strings.StringGlues._
+import io.kevinlee.pdf2excel.cba.CbaPageHandler2
+
 import net.ceedubs.ficus.Ficus._
+
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
-import scalaz._
-import Scalaz._
-import io.kevinlee.pdf2excel.pagehandler.PageHandler2
+
+import scalaz._, Scalaz._
+
 
 object Pdf2Excel {
 
   final case class FromTo(from: Int, to: Int)
-
-  final case class Header(dateProcessed: String,
-                          dateOfTransaction: String,
-                          cardNo: String,
-                          details: String,
-                          amount: String) {
-    def toSeq: Seq[String] = Vector(dateOfTransaction, details, amount)
-  }
-
-  final case class Transaction(dateProcessed: LocalDate,
-                               dateOfTransaction: LocalDate,
-                               cardNo: String,
-                               details: String,
-                               amount: BigDecimal)
-
-  final case class TransactionDoc(header: Header, content: Seq[Transaction]) {
-    @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-    lazy override val toString: String =
-      s"""TransactionDoc(
-         |  $header,
-         |  ${"-" * header.toString.length}
-         |  ${content.mkString("", "\n  ", "\n")})
-         |""".stripMargin
-  }
 
   def handlePages(f: Seq[String] => Option[TransactionDoc], pages: List[Seq[String]]): Option[TransactionDoc] = {
     val sequence: Option[List[TransactionDoc]] = pages.map(f).filter(_.isDefined).sequence
@@ -88,7 +68,7 @@ object Pdf2Excel {
           ) ++ (for {
             (trans, i) <- transactionDoc.content.zipWithIndex
             row = Row(i + rowPositionOffet) {
-              val _@Transaction(_, dateOfTransaction, _, details, amount) = trans
+              val _@Transaction(_, dateOfTransaction, details, amount) = trans
               Set(
                 StringCell(0, dateOfTransaction.toString),
                 StringCell(1, details),
@@ -130,7 +110,7 @@ object Pdf2Excel {
 
     // TODO: get it from parameter or config file
 //    val maybeDoc: Option[TransactionDoc] = handlePages(PageHandler1, pages)
-    val maybeDoc: Option[TransactionDoc] = handlePages(PageHandler2, pages)
+    val maybeDoc: Option[TransactionDoc] = handlePages(CbaPageHandler2, pages)
 
     println(
       s"""maybeDoc: $maybeDoc
