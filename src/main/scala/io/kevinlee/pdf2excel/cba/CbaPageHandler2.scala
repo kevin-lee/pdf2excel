@@ -20,6 +20,7 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
 
   private val transactionStart: String = "Transactions"
   private val lastLines: List[String] = List("Interest charged on purchases", "Interest charged on cash advances")
+  private val endMessage = "Please check your transactions listed on this statement and report any discrepancy to the Bank before the payment due date. Mastercard is the registered trademark of Mastercard International Incorporated."
 
   def buildHeader(header: String): Header = {
     val headerColumns = header.split("[\\s]+")
@@ -70,47 +71,56 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
       val header = lines.headOption.map(buildHeader).getOrElse(Header("", "", "", ""))
 
       @tailrec
-      def processLine(lines: Seq[String], acc: Seq[Transaction]): Seq[Transaction] = lines match {
+      def collect(lines: Seq[String],  acc: Vector[String]): Vector[String] = lines match {
         case Nil =>
           acc
         case x :: xs =>
           val line = x.trim
-          lineP.parse(line) match {
-            case Parsed.Success((d, a), _) =>
-              val (twoMoreLines, rest) = xs.splitAt(2)
-
-              if (twoMoreLines.length === 2 && isFailure(lineP.parse(twoMoreLines(0).trim))) {
-                if (twoMoreLines === lastLines) {
-                  processLine(s"$line" :: Nil, acc)
-                } else {
-                  processLine(s"$line ${twoMoreLines.map(_.trim).mkString(" ")}" :: rest, acc)
-                }
-              } else {
-                val words = a.split("[\\s]+").map(_.trim)
-                val (details, Array(amount)) = words.splitAt(words.length - 1)
-                val filteredAmount = amount.replaceAllLiterally(",", "")
-                processLine(
-                  xs,
-                  acc :+ Transaction(
-                    d,
-                    d,
-                    details.mkString(" "),
-                    BigDecimal(
-                      if (filteredAmount.endsWith("-"))
-                        s"-${filteredAmount.dropRight(1)}"
-                      else
-                        filteredAmount
-                    )
-                  )
-                )
-              }
-            case Parsed.Failure(_, _, _) =>
-              processLine(xs, acc)
+          if (line === endMessage) {
+            acc
+          } else  if (xs.take(2) === lastLines) {
+            acc :+ line
+          } else {
+            if (isSuccess(lineP.parse(line))) {
+              val firstFive = xs.take(5)
+              val (beforeNext, next) = firstFive.span(l => isFailure(lineP.parse(l)))
+              if (beforeNext.isEmpty)
+                collect(xs, acc :+ line)
+              else
+                collect(next ++ xs.drop(5), acc :+ (line +: beforeNext.toVector).mkString(" "))
+            } else {
+              collect(xs, acc)
+            }
           }
 
       }
 
-      val content = processLine(lines.drop(1), Vector.empty)
+      def processLine(lines: Vector[String]): Vector[Transaction] = lines.flatMap { line =>
+        lineP.parse(line) match {
+          case Parsed.Success((d, a), _) =>
+            val words = a.split("[\\s]+").map(_.trim)
+            val (details, Array(amount)) = words.splitAt(words.length - 1)
+            val filteredAmount = amount.replaceAllLiterally(",", "")
+            Vector(
+              Transaction(
+                d,
+                d,
+                details.mkString(" "),
+                BigDecimal(
+                  if (filteredAmount.endsWith("-"))
+                    s"-${filteredAmount.dropRight(1)}"
+                  else
+                    filteredAmount
+                )
+              )
+            )
+          case Parsed.Failure(_, _, _) =>
+            Vector.empty
+        }
+      }
+
+      val collected = collect(lines.drop(1), Vector.empty)
+      val content = processLine(collected)
       Some(TransactionDoc(header, content))
     }
   }
