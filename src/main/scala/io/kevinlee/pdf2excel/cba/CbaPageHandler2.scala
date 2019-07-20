@@ -76,7 +76,7 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
           acc
         case x :: xs =>
           val line = x.trim
-          if (line === endMessage) {
+          if (lastLines.exists(line.contains) || line === endMessage) {
             acc
           } else  if (xs.take(2) === lastLines) {
             acc :+ line
@@ -86,8 +86,13 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
               val (beforeNext, next) = firstFive.span(l => isFailure(lineP.parse(l)))
               if (beforeNext.isEmpty)
                 collect(xs, acc :+ line)
-              else
-                collect(next ++ xs.drop(5), acc :+ (line +: beforeNext.toVector).mkString(" "))
+              else {
+                val validBeforeNext = beforeNext.takeWhile { x =>
+                  val y = x.trim
+                  !lastLines.exists(y.contains) && y =/= endMessage
+                }
+                collect(next ++ xs.drop(5), acc :+ (line +: validBeforeNext.toVector).mkString(" "))
+              }
             } else {
               collect(xs, acc)
             }
