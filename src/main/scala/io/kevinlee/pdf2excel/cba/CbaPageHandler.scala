@@ -23,7 +23,7 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
     val headerColumns = header.split("[\\s]+")
     val date = headerColumns(0)
     val details = s"${headerColumns(1)} ${headerColumns(2)}"
-    val cardNo = s"${headerColumns(3)} ${headerColumns(4)}"
+    val _ = s"${headerColumns(3)} ${headerColumns(4)}" // card number
     val amount = s"${headerColumns(5)} ${headerColumns(6)}"
     Header(date, date, details, amount)
   }
