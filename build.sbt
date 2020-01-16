@@ -1,4 +1,4 @@
-val dottyVersion = "0.14.0-RC1"
+//val dottyVersion = "0.20.0"
 val ScalaVersion = "2.12.10"
 //val theScalaVersion = dottyVersion
 val theScalaVersion = ScalaVersion
@@ -6,7 +6,7 @@ val theScalaVersion = ScalaVersion
 ThisBuild / organization := "io.kevinlee"
 ThisBuild / version := "0.0.1"
 ThisBuild / scalaVersion := theScalaVersion
-ThisBuild / crossScalaVersions := Seq("2.11.12", "2.12.10", "2.13.1")
+ThisBuild / crossScalaVersions := Set(theScalaVersion, "2.11.12", "2.12.10", "2.13.1").toList
 
 lazy val root = (project in file("."))
   .settings(
@@ -24,7 +24,7 @@ lazy val root = (project in file("."))
       , "-Ywarn-nullary-override"  // Warn when non-nullary overrides nullary, e.g. def foo() over def foo.
       , "-Ywarn-numeric-widen"     // Warn when numerics are widened.
       )
-    , resolvers += "3rd Party Repo" at "http://dl.bintray.com/kevinlee/maven",
+    , resolvers += "3rd Party Repo" at "https://dl.bintray.com/kevinlee/maven",
 
     libraryDependencies ++= Seq(
         "org.apache.pdfbox" % "pdfbox" % "2.0.8"
