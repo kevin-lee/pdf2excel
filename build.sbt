@@ -27,7 +27,7 @@ lazy val root = (project in file("."))
     , resolvers += "3rd Party Repo" at "https://dl.bintray.com/kevinlee/maven",
 
     libraryDependencies ++= Seq(
-        "org.apache.pdfbox" % "pdfbox" % "2.0.8"
+        "org.apache.pdfbox" % "pdfbox" % "2.0.18"
 
 //      , ("org.scalaz" %% "scalaz-core" % "7.2.23").withDottyCompat(scalaVersion.value)
 //      , ("info.folone" %% "poi-scala" % "0.18").withDottyCompat(scalaVersion.value)
@@ -36,11 +36,11 @@ lazy val root = (project in file("."))
 //      , ("com.iheart" %% "ficus" % "1.4.3").withDottyCompat(scalaVersion.value)
 //      , ("io.kevinlee" %% "skala" % "0.1.0").withDottyCompat(scalaVersion.value)
 
-      , "org.scalaz" %% "scalaz-core" % "7.2.20"
-      , "info.folone" %% "poi-scala" % "0.18"
+      , "org.scalaz" %% "scalaz-core" % "7.2.30"
+      , "info.folone" %% "poi-scala" % "0.19"
       , "com.lihaoyi" %% "fastparse" % "1.0.0"
-      , "com.github.nscala-time" %% "nscala-time" % "2.18.0"
-      , "com.iheart" %% "ficus" % "1.4.3"
+      , "com.github.nscala-time" %% "nscala-time" % "2.22.0"
+      , "com.iheart" %% "ficus" % "1.4.7"
       , "io.kevinlee" %% "skala" % "0.1.0"
       )
   )
