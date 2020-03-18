@@ -55,7 +55,9 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
     if (lines.isEmpty) {
       None
     } else {
-      val months = Vector("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec").zipWithIndex.map { case (x, i) => (x, i + 1) }.toMap
+      val months =
+        Vector("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+          .zipWithIndex.map { case (x, i) => (x, i + 1) }.toMap
 
       val monthsP = P(StringIn(months.keys.toSeq:_*))
 
