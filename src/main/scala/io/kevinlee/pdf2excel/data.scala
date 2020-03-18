@@ -8,17 +8,21 @@ import com.github.nscala_time.time.Imports.LocalDate
   */
 trait PageHandler[A] extends (Seq[String] => Option[A])
 
-final case class Header(dateProcessed: String,
-                        dateOfTransaction: String,
-                        details: String,
-                        amount: String) {
+final case class Header(
+  dateProcessed: String,
+  dateOfTransaction: String,
+  details: String,
+  amount: String
+) {
   def toSeq: Seq[String] = Vector(dateOfTransaction, details, amount)
 }
 
-final case class Transaction(dateProcessed: LocalDate,
-                             dateOfTransaction: LocalDate,
-                             details: String,
-                             amount: BigDecimal)
+final case class Transaction(
+  dateProcessed: LocalDate,
+  dateOfTransaction: LocalDate,
+  details: String,
+  amount: BigDecimal
+)
 
 final case class TransactionDoc(header: Header, content: Seq[Transaction]) {
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))

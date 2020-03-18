@@ -22,7 +22,10 @@ object Pdf2Excel {
 
   final case class FromTo(from: Int, to: Int)
 
-  def handlePages(f: Seq[String] => Option[TransactionDoc], pages: List[Seq[String]]): Option[TransactionDoc] = {
+  def handlePages(
+    f: Seq[String] => Option[TransactionDoc],
+    pages: List[Seq[String]]
+  ): Option[TransactionDoc] = {
     val sequence: Option[List[TransactionDoc]] = pages.map(f).filter(_.isDefined).sequence
     val maybeDoc: Option[TransactionDoc] =
       sequence.flatMap(_.reduceLeftOption((x, y) => x.copy(content = x.content ++ y.content)))
@@ -30,8 +33,10 @@ object Pdf2Excel {
   }
 
 
-  def convertToText(inputFile: File,
-                    fromTo: Option[FromTo]): List[List[String]] = {
+  def convertToText(
+    inputFile: File,
+    fromTo: Option[FromTo]
+  ): List[List[String]] = {
 
     import io.kevinlee.skala.util.TryWith.SideEffect.tryWith
 
@@ -79,7 +84,9 @@ object Pdf2Excel {
         }
       )
     }
-    sheetOne.safeToFile(outputPath).fold(ex ⇒ sys.error(ex.getMessage), identity).unsafePerformIO
+    sheetOne.safeToFile(outputPath)
+      .fold(ex => sys.error(ex.getMessage), identity)
+      .unsafePerformIO
   }
 
   private val FilenameAndExt = "(.+)[\\.]([^\\.]+)$".r
