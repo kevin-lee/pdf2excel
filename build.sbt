@@ -1,12 +1,12 @@
 //val dottyVersion = "0.20.0"
-val ScalaVersion = "2.12.10"
+val ScalaVersion = "2.13.2"
 //val theScalaVersion = dottyVersion
 val theScalaVersion = ScalaVersion
 
 ThisBuild / organization := "io.kevinlee"
 ThisBuild / version := "0.0.1"
 ThisBuild / scalaVersion := theScalaVersion
-ThisBuild / crossScalaVersions := Set(theScalaVersion, "2.11.12", "2.12.10", "2.13.1").toList
+ThisBuild / crossScalaVersions := Set(theScalaVersion, "2.11.12", "2.12.11", "2.13.2").toList
 
 lazy val root = (project in file("."))
   .settings(
