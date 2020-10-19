@@ -1,5 +1,6 @@
 //val dottyVersion = "0.20.0"
-val ScalaVersion = "2.13.2"
+//val ScalaVersion = "2.13.2"
+val ScalaVersion = "2.12.12"
 //val theScalaVersion = dottyVersion
 val theScalaVersion = ScalaVersion
 
