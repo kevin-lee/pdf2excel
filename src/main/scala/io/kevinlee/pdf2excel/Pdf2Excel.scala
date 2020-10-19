@@ -8,7 +8,7 @@ import com.typesafe.config.ConfigFactory
 import info.folone.scala.poi.{NumericCell, Row, Sheet, StringCell, Workbook}
 
 import io.kevinlee.skala.strings.StringGlues._
-import io.kevinlee.pdf2excel.cba.CbaPageHandler2
+import io.kevinlee.pdf2excel.ing.IngPageHandler
 
 import net.ceedubs.ficus.Ficus._
 
@@ -66,19 +66,21 @@ object Pdf2Excel {
         Sheet(s"Credit Card ${LocalDateTime.now().toString("yyyy-MM")}") {
           Set(
             Row(headerPosition) {
-              transactionDoc.header.toSeq.zipWithIndex.map { case (x, i) =>
+              Header.toSeq(transactionDoc.header).zipWithIndex.map { case (x, i) =>
                 StringCell(i, x)
               }.toSet
             }
           ) ++ (for {
             (trans, i) <- transactionDoc.content.zipWithIndex
             row = Row(i + rowPositionOffet) {
-              val _@Transaction(_, dateOfTransaction, details, amount) = trans
-              Set(
-                StringCell(0, dateOfTransaction.toString),
-                StringCell(1, details),
-                NumericCell(2, amount.toDouble)
-              )
+              trans match {
+                case Transaction(_, dateOfTransaction, details, amount) =>
+                  Set(
+                    StringCell(0, dateOfTransaction.toString),
+                    StringCell(1, details),
+                    NumericCell(2, amount.toDouble),
+                  )
+              }
             }
           } yield row).toSet
         }
@@ -117,7 +119,8 @@ object Pdf2Excel {
 
     // TODO: get it from parameter or config file
 //    val maybeDoc: Option[TransactionDoc] = handlePages(PageHandler1, pages)
-    val maybeDoc: Option[TransactionDoc] = handlePages(CbaPageHandler2, pages)
+//    val maybeDoc: Option[TransactionDoc] = handlePages(CbaPageHandler2, pages)
+    val maybeDoc: Option[TransactionDoc] = handlePages(IngPageHandler, pages)
 
     println(
       s"""maybeDoc: $maybeDoc

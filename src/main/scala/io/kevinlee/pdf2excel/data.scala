@@ -13,8 +13,19 @@ final case class Header(
   dateOfTransaction: String,
   details: String,
   amount: String
-) {
-  def toSeq: Seq[String] = Vector(dateOfTransaction, details, amount)
+)
+
+object Header {
+
+  def toSeq(header: Header): Seq[String] = header match {
+    case Header(
+        _,
+        dateOfTransaction,
+        details,
+        amount,
+      ) =>
+        Vector(dateOfTransaction, details, amount)
+  }
 }
 
 final case class Transaction(
