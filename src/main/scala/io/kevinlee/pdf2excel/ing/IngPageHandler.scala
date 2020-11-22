@@ -15,6 +15,7 @@ import scala.annotation.tailrec
 object IngPageHandler extends PageHandler[TransactionDoc] {
 
   private val transactionStart: String = "Transactions"
+  private val headers: List[String] = List("Date", "Details", "Money", "out", "Money", "in", "Balance").map(_.toLowerCase)
   private val lastLines: List[String] = List("Closing balance")
   private val endMessage = "Please check this statement carefully and report any errors or unauthorised transactions straight away"
 
@@ -28,10 +29,17 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
   @tailrec
   private def findTransactionStart(page: Seq[String]): Seq[String] = {
     val droppedLines1 = page.dropWhile(line => line =!= transactionStart)
-    if (droppedLines1.length < 2) {
+    val lines = if (droppedLines1.length < 2) {
+      val (_, transactionLists) =
+        page.span(line => line.split("[\\s]+")
+          .map(_.trim.toLowerCase).toList =!= headers)
+      transactionLists
+    } else {
+      droppedLines1.drop(1)
+    }
+    if (lines.length < 2) {
       Vector.empty[String]
     } else {
-      val lines = droppedLines1.drop(1)
       val found = lines.headOption.exists(_.trim.startsWith("Date"))
       if (found) lines else findTransactionStart(lines)
     }
@@ -149,7 +157,7 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
 
       val collected = collect(lines.drop(1), Vector.empty)
       val content = processLine(collected)
-      Some(TransactionDoc(header, content))
+      TransactionDoc(header, content).some
     }
   }
 }
