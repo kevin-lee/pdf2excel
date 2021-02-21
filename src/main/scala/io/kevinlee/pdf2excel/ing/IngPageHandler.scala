@@ -72,10 +72,10 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
           if (lastLines.exists(line.contains) || line.contains(endMessage)) {
             acc
           } else {
-            val List(line1, line2) = xs.take(2)
+            val (line1, line2) = (xs.headOption, xs.drop(1).headOption)
             if (
-              lastLines.exists(line1.contains) && (
-                  line1.contains(endMessage) || line2.contains(endMessage)
+              line1.exists(l => lastLines.exists(l.contains)) && (
+                  line1.exists(_.contains(endMessage)) || line2.exists(_.contains(endMessage))
                 )
             ) {
               acc :+ line
