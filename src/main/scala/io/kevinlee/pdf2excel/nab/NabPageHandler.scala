@@ -1,13 +1,10 @@
 package io.kevinlee.pdf2excel.nab
 
+import cats.parse.{Parser => P}
+import cats.syntax.all._
 import com.github.nscala_time.time.Imports.LocalDate
-
-import fastparse.all._
-
 import io.kevinlee.parsers.Parsers.{alphabets, digits, monetaryNumbers, spaces, stringChars}
 import io.kevinlee.pdf2excel.{Header, PageHandler, Transaction, TransactionDoc}
-
-import scalaz._, Scalaz._
 
 /**
   * @author Kevin Lee
@@ -28,25 +25,26 @@ case object NabPageHandler extends PageHandler[TransactionDoc] {
   }
 
   def apply(page: Seq[String]): Option[TransactionDoc] = {
-    val lines = page.dropWhile(line => line =/= transactionStart)
+    val lines = page.dropWhile(line => line =!= transactionStart)
     if (lines.isEmpty) {
       None
     } else {
-      val date = P(digits.rep.! ~ "/" ~ digits.rep.! ~ "/" ~ digits.rep.!).map { case (day, month, year) =>
-        LocalDate.parse(s"${LocalDate.now().getYear / 100}$year-$month-$day")
+      val date = (digits.rep.string ~ (P.char('/') *> digits.rep.string) ~ (P.char('/') *> digits.rep.string))
+      .map { case ((day, month), year) =>
+        LocalDate.parse(s"${(LocalDate.now().getYear / 100).toString}$year-$month-$day")
       }
-      val lineP = date ~ spaces.rep ~ date ~ spaces.rep ~ (alphabets ~ digits.rep).! ~ spaces.rep ~ stringChars.! ~ End
+      val lineP = date ~ (spaces.rep *> date) ~ (spaces.rep *> (alphabets ~ digits.rep).string) ~ (spaces.rep *> stringChars.string) <* P.end
       val header = buildHeader(lines.slice(1, 7))
 
       val content =
         lines.drop(7)
           .foldLeft(Vector.empty[Transaction]) { (acc, x) =>
             lineP.parse(x.trim) match {
-              case Parsed.Success((dateProcessed, dateOfTransaction, cardNo, detailsAndAmount), _) =>
+              case Right((_, (((dateProcessed, dateOfTransaction), cardNo), detailsAndAmount))) =>
                 val splitted = detailsAndAmount.split("[\\s]+")
                 val last = splitted.last
                 monetaryNumbers.parse(last) match {
-                  case Parsed.Success(price, _) =>
+                  case Right((_, price)) =>
                     acc :+ Transaction(dateProcessed, dateOfTransaction, splitted.init.mkString(" "), price)
                   case _ =>
                     acc

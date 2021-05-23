@@ -39,7 +39,7 @@ final case class TransactionDoc(header: Header, content: Seq[Transaction]) {
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   lazy override val toString: String =
     s"""TransactionDoc(
-       |  $header,
+       |  ${header.toString},
        |  ${"-" * header.toString.length}
        |  ${content.mkString("", "\n  ", "\n")})
        |""".stripMargin
