@@ -1,8 +1,9 @@
 package io.kevinlee.pdf2excel.ing
 
+import cats.parse.Parser.{Error => ParserError}
+import cats.parse.{Parser => P}
 import cats.syntax.all._
 import com.github.nscala_time.time.Imports.LocalDate
-import fastparse.all._
 import io.kevinlee.parsers.Parsers._
 import io.kevinlee.pdf2excel.{Header, PageHandler, Transaction, TransactionDoc}
 
@@ -15,6 +16,7 @@ import scala.annotation.tailrec
 object IngPageHandler extends PageHandler[TransactionDoc] {
 
   private val transactionStart: String = "Transactions"
+  @SuppressWarnings(Array("org.wartremover.warts.PlatformDefault"))
   private val headers: List[String] = List("Date", "Details", "Money", "out", "Money", "in", "Balance").map(_.toLowerCase)
   private val lastLines: List[String] = List("Closing balance")
   private val endMessage = "Please check this statement carefully and report any errors or unauthorised transactions straight away"
@@ -30,6 +32,7 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
   private def findTransactionStart(page: Seq[String]): Seq[String] = {
     val droppedLines1 = page.dropWhile(line => line =!= transactionStart)
     val lines = if (droppedLines1.length < 2) {
+      @SuppressWarnings(Array("org.wartremover.warts.PlatformDefault"))
       val (_, transactionLists) =
         page.span(line => line.split("[\\s]+")
           .map(_.trim.toLowerCase).toList =!= headers)
@@ -51,11 +54,12 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
     if (lines.isEmpty) {
       None
     } else {
-      val date = P(digits.rep.! ~ "/" ~ digits.rep.! ~ "/" ~ digits.rep.!).map { case (day, month, year) =>
-        LocalDate.parse(s"$year-$month-$day")
-      }
+      val date = (digits.rep.string ~ (P.char('/') *> digits.rep.string) ~ (P.char('/') *> digits.rep.string))
+        .map { case ((day, month), year) =>
+          LocalDate.parse(s"$year-$month-$day")
+        }
 
-      val lineP = date ~ spaces.rep ~ AnyChar.rep(1).! ~ End
+      val lineP = date ~ (spaces.rep *> P.anyChar.rep(1).string) <* P.end
       val header = lines.headOption.map(buildHeader).getOrElse(Header("", "", "", ""))
 
       @tailrec
@@ -66,8 +70,8 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
           val line = x.trim
           println(
             s"""line: $line
-               | [2]: ${xs.take(2)}
-               | [5]: ${xs.take(5)}
+               | [2]: ${xs.take(2).toString}
+               | [5]: ${xs.take(5).toString}
                |""".stripMargin)
           if (lastLines.exists(line.contains) || line.contains(endMessage)) {
             acc
@@ -87,8 +91,8 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
                   collect(xs, acc :+ line)
                 else {
                   println(
-                    s"""beforeNext: $beforeNext
-                       |      next: $next
+                    s"""beforeNext: ${beforeNext.toString}
+                       |      next: ${next.toString}
                        |""".stripMargin
                   )
 
@@ -123,7 +127,7 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def processLine(lines: Vector[String]): Vector[Transaction] = lines.flatMap { line =>
         lineP.parse(line) match {
-          case Parsed.Success((d, a), _) =>
+          case Right((_, (d, a))) =>
             val words = a.split("[\\s]+").map(_.trim)
             val (details, Array(amount, balance)) = words.splitAt(words.length - 2)
             println(
@@ -133,7 +137,7 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
                  | amount: $amount
                  |balance: $balance
                  |""".stripMargin)
-            val filteredAmount = amount.replaceAllLiterally(",", "")
+            val filteredAmount = amount.replace(",", "")
             if (filteredAmount.startsWith("-")) {
 
             }
@@ -150,12 +154,12 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
                 )
               )
             )
-          case Parsed.Failure(_, _, _) =>
-            Vector.empty
+          case Left(ParserError(_, _)) =>
+            Vector.empty[Transaction]
         }
       }
 
-      val collected = collect(lines.drop(1), Vector.empty)
+      val collected = collect(lines.drop(1), Vector.empty[String])
       val content = processLine(collected)
       TransactionDoc(header, content).some
     }

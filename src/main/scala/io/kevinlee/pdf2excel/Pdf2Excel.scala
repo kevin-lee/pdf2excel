@@ -1,21 +1,16 @@
 package io.kevinlee.pdf2excel
 
 import java.io.File
-
 import com.github.nscala_time.time.Imports._
 import com.typesafe.config.ConfigFactory
-
 import info.folone.scala.poi.{NumericCell, Row, Sheet, StringCell, Workbook}
-
-import io.kevinlee.skala.strings.StringGlues._
 import io.kevinlee.pdf2excel.ing.IngPageHandler
-
 import net.ceedubs.ficus.Ficus._
-
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
+import cats.syntax.all._
 
-import scalaz._, Scalaz._
+import scala.util.Using
 
 
 object Pdf2Excel {
@@ -36,11 +31,8 @@ object Pdf2Excel {
   def convertToText(
     inputFile: File,
     fromTo: Option[FromTo]
-  ): List[List[String]] = {
-
-    import io.kevinlee.skala.util.TryWith.SideEffect.tryWith
-
-    tryWith(PDDocument.load(inputFile)) { pdf =>
+  ): Either[Throwable, List[List[String]]] =
+    Using(PDDocument.load(inputFile)) { pdf =>
       val (startPage, endPage) =
         fromTo.fold((1, pdf.getNumberOfPages))(fromTo => (fromTo.from, fromTo.to))
 
@@ -48,8 +40,7 @@ object Pdf2Excel {
         page <- startPage to endPage
         onePage = convertOnePageToText(pdf, page)
       } yield onePage).map(_.split("[\\n]+").toList).toList
-    }
-  }
+    }.toEither
 
   def convertOnePageToText(pdf: PDDocument, page: Int): String = {
       val stripper = new PDFTextStripper
@@ -88,7 +79,7 @@ object Pdf2Excel {
     }
     sheetOne.safeToFile(outputPath)
       .fold(ex => sys.error(ex.getMessage), identity)
-      .unsafePerformIO
+      .unsafePerformIO()
   }
 
   private val FilenameAndExt = "(.+)[\\.]([^\\.]+)$".r
@@ -106,7 +97,7 @@ object Pdf2Excel {
     val inputFilename = pdfConfig.as[String]("path")
     val outputDir = config.as[String]("excel.path")
     val inputFile = new File(inputFilename)
-    val outputPath = outputDir / replaceFileExtension(inputFile.getName, "xls")
+    val outputPath = s"$outputDir/${replaceFileExtension(inputFile.getName, "xls")}"
 
     val fromTo: Option[FromTo] = for {
         from <- pdfConfig.getAs[Int]("from")
@@ -114,7 +105,13 @@ object Pdf2Excel {
         theFromTo = FromTo(from, to)
       } yield theFromTo
 
+    // TODO: Handle error properly
+    @SuppressWarnings(Array("org.wartremover.warts.Throw"))
     val pages = convertToText(inputFile, fromTo)
+      .fold(
+        th => throw th,
+        identity
+      )
 
 
     // TODO: get it from parameter or config file
@@ -122,12 +119,19 @@ object Pdf2Excel {
 //    val maybeDoc: Option[TransactionDoc] = handlePages(CbaPageHandler2, pages)
     val maybeDoc: Option[TransactionDoc] = handlePages(IngPageHandler, pages)
 
-    println(
-      s"""maybeDoc: $maybeDoc
-         |""".stripMargin
-    )
-    println(s"Write to $outputPath")
-    maybeDoc.foreach(transactionDoc => writeExcel(transactionDoc, outputPath))
+    maybeDoc match {
+      case Some(transactionDoc) =>
+        println(
+          s"""maybeDoc: ${transactionDoc.toString}
+             |""".stripMargin
+        )
+        println(s"Write to $outputPath")
+        writeExcel(transactionDoc, outputPath)
+
+      case None =>
+        sys.error(s"No document found at ${inputFile.getCanonicalPath}")
+    }
+
   }
 
 }

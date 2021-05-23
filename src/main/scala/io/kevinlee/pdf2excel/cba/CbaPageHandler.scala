@@ -1,13 +1,11 @@
 package io.kevinlee.pdf2excel.cba
 
+import cats.parse.Parser.{Error => ParserError}
+import cats.parse.{Parser => P}
+import cats.syntax.all._
 import com.github.nscala_time.time.Imports.LocalDate
-
-import fastparse.all._
-
 import io.kevinlee.parsers.Parsers._
 import io.kevinlee.pdf2excel.{Header, PageHandler, Transaction, TransactionDoc}
-
-import scalaz._, Scalaz._
 
 import scala.annotation.tailrec
 
@@ -30,7 +28,7 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
 
   @tailrec
   def findTransactionStart(page: Seq[String]): Seq[String] = {
-    val droppedLines1 = page.dropWhile(line => line =/= transactionStart)
+    val droppedLines1 = page.dropWhile(line => line =!= transactionStart)
     if (droppedLines1.length < 2) {
       Vector.empty[String]
     } else {
@@ -43,7 +41,7 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
   private def decideYear(month: Int): Int = {
     val now = LocalDate.now()
     val year = now.getYear
-    if (month === 12 && now.getMonthOfYear =/= 12)
+    if (month === 12 && now.getMonthOfYear =!= 12)
       year - 1
     else
       year
@@ -55,19 +53,19 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
     if (lines.isEmpty) {
       None
     } else {
-      val months =
-        Vector("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+      val months: Map[String, Int] =
+        List("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
           .zipWithIndex.map { case (x, i) => (x, i + 1) }.toMap
 
-      val monthsP = P(StringIn(months.keys.toSeq:_*))
+      val monthsP = P.stringIn(months.keys)
 
-      val date = P(digits.rep.! ~ spaces.rep ~ monthsP.!).map { case (day, month) =>
+      val date = (digits.rep.string ~ (spaces.rep *> monthsP.string)).map { case (day, month) =>
         val monthValue = months(month)
-        LocalDate.parse(s"${decideYear(monthValue)}-$monthValue-$day")
+        LocalDate.parse(s"${decideYear(monthValue).toString}-${monthValue.toString}-${day}")
       }
 
       val lineP =
-        date ~ spaces.rep ~ AnyChar.rep(1).! ~ End
+        date ~ (spaces.rep *> P.anyChar.rep(1).string) <* P.end
       val header = lines.headOption.map(buildHeader).getOrElse(Header("", "", "", ""))
 
       @tailrec
@@ -77,14 +75,14 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
         case x :: xs =>
           val line = x.trim
           lineP.parse(line) match {
-            case Parsed.Success((d, a), _) =>
+            case Right((_, (d, a))) =>
               val (twoMoreLines, rest) = xs.splitAt(2)
               if (twoMoreLines.length === 2 && twoMoreLines(1).trim.startsWith("Mastercard")) {
                 processLine(s"$line ${twoMoreLines.map(_.trim).mkString(" ")}" :: rest, acc)
               } else {
                 val words = a.split("[\\s]+").map(_.trim)
                 val (details, Array(card, amount)) = words.splitAt(words.length - 2)
-                val filteredAmount = amount.replaceAllLiterally(",", "")
+                val filteredAmount = amount.replace(",", "")
                 processLine(
                   xs,
                   acc :+ Transaction(
@@ -100,7 +98,7 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
                   )
                 )
               }
-            case Parsed.Failure(_, _, _) =>
+            case Left(ParserError(_, _)) =>
               processLine(xs, acc)
           }
 

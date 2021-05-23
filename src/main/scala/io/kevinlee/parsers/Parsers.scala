@@ -1,17 +1,20 @@
 package io.kevinlee.parsers
 
-import fastparse.all._
+import cats.parse.{Parser => P, _}
+import cats.parse.Parser.{Error => ParserError}
 
 /**
   * @author Kevin Lee
   * @since 2018-03-04
   */
-@SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
+@SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing", "org.wartremover.warts.AnyVal"))
 object Parsers {
 
+  type Parsed[A] = Either[ParserError, A]
+
   def isSuccess[T](parsed: Parsed[T]): Boolean = parsed match {
-    case Parsed.Success(_, _) => true
-    case Parsed.Failure(_, _, _) => false
+    case Right(_) => true
+    case Left(ParserError(_, _)) => false
   }
 
   def isFailure[T](parsed: Parsed[T]): Boolean = !isSuccess(parsed)
@@ -25,43 +28,43 @@ object Parsers {
 
   val Digit: CharToParse =
     NamedFunction('0' to '9' contains (_: Char), "Digit")
-  val digits: P[Unit] = P(CharsWhile(Digit))
+  val digits: P[Unit] = P.charsWhile(Digit).void
 
-  val expondent: P[Unit] = P(CharIn("eE") ~ CharIn("+-").? ~ digits)
-  val factional: P[Unit] = P(CharIn(".") ~ digits.rep)
-  val integral: P[Unit] = P(("0" | CharIn('1' to '9')) ~ digits.?)
+  val expondent: P[Unit] = (P.charIn("eE") ~ P.charIn("+-").? ~ digits).void
+  val factional: P[Unit] = (P.charIn(".") ~ digits.rep).void
+  val integral: P[Unit] = ((P.char('0') | P.charIn('1' to '9')) ~ digits.?).void
 
-  val numbers: P[BigDecimal] =
-    P(CharIn("+-").? ~ integral ~ factional.? ~ expondent.?).!.
+  val numbers: Parser0[BigDecimal] =
+    (P.charIn("+-").? ~ integral ~ factional.? ~ expondent.?).string.
       map(BigDecimal(_))
 
-  /* digit,digit
-   * e.g.) 000,000 or 000
+  /* ,digit
+   * e.g.) ,000
    */
-  val monetaryDigits: P[Unit] = P(integral ~ ("," ~ integral.rep(min = 1)).?)
+  val commaDigits: P[Unit] = (P.charIn(',') ~ integral.rep(min = 1)).void
 
-  val monetaryNumbers: P[BigDecimal] =
-    P(CharIn("+-").? ~ monetaryDigits.rep(min = 1) ~ factional.? ~ expondent.?).!.
-      map(x => BigDecimal(x.replaceAllLiterally(",", "")))
+  val monetaryNumbers: Parser0[BigDecimal] =
+    (P.charIn("+-").? ~ integral ~ commaDigits.rep ~ factional.? ~ expondent.?).string.
+      map(x => BigDecimal(x.replace(",", "")))
 
 
   val Whitespace: CharToParse =
-    NamedFunction(" \t" contains (_: Char), "Whitespace")
-  val spaces: P[Unit] = P(CharsWhile(Whitespace))
+    NamedFunction(" \t".contains(_: Char), "Whitespace")
+  val spaces: P[Unit] = P.charsWhile(Whitespace).void
 
   val NonWhitespace: CharToParse =
     NamedFunction(c => !Whitespace(c), "NonWhitespace")
-  val notSpaces: P[Unit] = P(CharsWhile(NonWhitespace))
+  val notSpaces: P[Unit] = P.charsWhile(NonWhitespace).void
 
   val NewLines: CharToParse =
     NamedFunction("\r\n" contains (_: Char), "Whitespace")
-  val newLines: P[Unit] = P(CharsWhile(NewLines))
+  val newLines: P[Unit] = P.charsWhile(NewLines).void
 
   val AlphabetLower: CharToParse =
-    NamedFunction('a' to 'z' contains (_: Char), "AlphabetLower")
+    NamedFunction(('a' to 'z').contains(_: Char), "AlphabetLower")
 
   val AlphabetUpper: CharToParse =
-    NamedFunction('A' to 'Z' contains (_: Char), "AlphabetUpper")
+    NamedFunction(('A' to 'Z').contains(_: Char), "AlphabetUpper")
 
   val StringChar: CharToParse =
     NamedFunction(!"''\\".contains(_: Char), "StringChar")
@@ -69,24 +72,25 @@ object Parsers {
   val NonWhitespaceStringChar: CharToParse =
     NamedFunction(c => NonWhitespace(c) && !StringChar(c), "NonWhitespaceStringChar")
 
-  val alphabetsLower: P[String] = P(CharsWhile(AlphabetLower).!)
+  val alphabetsLower: P[String] = P.charsWhile(AlphabetLower).string
 
-  val alphabetsUpper: P[String] = P(CharsWhile(AlphabetUpper).!)
+  val alphabetsUpper: P[String] = P.charsWhile(AlphabetUpper).string
 
-  val alphabets: P[String] = P(alphabetsLower | alphabetsUpper).rep(1).!
-
-
-  val hexDigit: P[Unit] = P(CharIn('0' to '9', 'a' to 'f', 'A' to 'F'))
-
-  val unicodeEscape: P[Unit] = P("u" ~ hexDigit ~ hexDigit ~ hexDigit ~ hexDigit)
+  val alphabets: P[String] = (alphabetsLower | alphabetsUpper).rep(min = 1).string
 
 
+  val hexDigit: P[Unit] = P.charIn(('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')).void
+
+  val unicodeEscape: P[Unit] = (P.char('u') ~ hexDigit ~ hexDigit ~ hexDigit ~ hexDigit).void
+
+
+  @SuppressWarnings(Array("org.wartremover.warts.JavaSerializable", "org.wartremover.warts.Serializable"))
   val escape: P[Any] =
-    P("""\""" ~ (CharIn("""/"\bfnrt""") | unicodeEscape)) | P("''").map(_ => "'")
+    (P.string("""\""") ~ (P.charIn("""/"\bfnrt""") | unicodeEscape)) | P.string("''").map(_ => "'")
 
-  val stringChars: P[String] = P(CharsWhile(StringChar)).!
-  val strings: P[String] = P("'" ~/ (stringChars | escape).rep.map(_.mkString) ~ "'")
+  val stringChars: P[String] = P.charsWhile(StringChar).string
+  val strings: P[String] = (P.string("'") ~ (stringChars | escape).rep.map(_.toList.mkString) ~ P.string("'")).string
 
-  val nonWhiteSpaceStringChars: P[String] = P(CharsWhile(NonWhitespaceStringChar)).!
+  val nonWhiteSpaceStringChars: P[String] = P.charsWhile(NonWhitespaceStringChar).string
 
 }
