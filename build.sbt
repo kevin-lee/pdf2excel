@@ -1,49 +1,76 @@
-val ScalaVersion = "2.13.6"
-val theScalaVersion = ScalaVersion
-
-val CatsVersion = "2.2.0"
-val CatsEffectVersion = "2.2.0"
-val PureConfigVersion = "0.13.0"
-val LogbackVersion = "1.2.3"
-val newtypeVersion = "0.4.4"
-
-val hedgehogVersion = "0.7.0"
-
-val EffectieVersion = "1.11.0"
-val LoggerFVersion = "1.11.0"
-
-val cats = "org.typelevel" %% "cats-core" % CatsVersion
-val catsEffect = "org.typelevel" %% "cats-effect" % CatsEffectVersion
-val newtype = "io.estatico" %% "newtype" % newtypeVersion
-lazy val effectieCatsEffect = "io.kevinlee" %% "effectie-cats-effect" % EffectieVersion
-lazy val loggerFCatsEffectSlf4j = Seq(
-  "io.kevinlee" %% "logger-f-cats-effect" % LoggerFVersion,
-  "io.kevinlee" %% "logger-f-log4s" % LoggerFVersion
-)
-
-ThisBuild / organization := "io.kevinlee"
-ThisBuild / version := "0.0.1"
-ThisBuild / scalaVersion := theScalaVersion
-ThisBuild / crossScalaVersions := Set(theScalaVersion, "2.12.13").toList
+ThisBuild / organization := props.Org
+ThisBuild / version := props.ProjectVersion
+ThisBuild / scalaVersion := props.ProjectScalaVersion
+ThisBuild / crossScalaVersions := Set(props.ProjectScalaVersion, "2.13.6", "2.12.14").toList
 
 lazy val root = (project in file("."))
   .settings(
     name := "pdf2excel",
     wartremoverErrors ++= Warts.allBut(Wart.ListUnapply),
-    libraryDependencies ++= Seq(
-        "org.apache.pdfbox" % "pdfbox" % "2.0.18",
-
-        "info.folone" %% "poi-scala" % "0.20",
-        "org.typelevel" %% "cats-parse" % "0.3.3",
-        "com.github.nscala-time" %% "nscala-time" % "2.28.0",
-        "com.iheart" %% "ficus" % "1.5.0",
-        "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.4",
-      ) ++
-      Seq(cats, catsEffect, effectieCatsEffect, newtype) ++
-      loggerFCatsEffectSlf4j ++
-      Seq(
-        "com.github.pureconfig" %% "pureconfig" % PureConfigVersion,
-        "ch.qos.logback" % "logback-classic" % LogbackVersion
+    libraryDependencies ++= List(
+      libs.pdfbox,
+      libs.poiScala,
+      libs.catsParse,
+      libs.nscalaTime,
+      libs.ficus,
+      libs.scalaCollectionCompat
+    ) ++
+      List(libs.cats, libs.catsEffect, libs.effectieCatsEffect, libs.newtype) ++
+      libs.loggerFCatsEffectSlf4j ++
+      List(
+        libs.pureconfig,
+        libs.logback
       ),
-    testFrameworks += TestFramework("hedgehog.sbt.Framework"),
+    testFrameworks ~= (testFws => TestFramework("hedgehog.sbt.Framework") +: testFws),
   )
+
+lazy val props = new {
+  //  final val ScalaVersion    = "3.0.0"
+  final val ScalaVersion        = "2.13.6"
+  final val ProjectScalaVersion = ScalaVersion
+
+  final val Org            = "io.kevinlee"
+  final val ProjectVersion = "0.1.0"
+
+  final val CatsVersion       = "2.6.1"
+  final val CatsEffectVersion = "2.5.1"
+  final val PureConfigVersion = "0.16.0"
+  final val LogbackVersion    = "1.2.3"
+  final val NewtypeVersion    = "0.4.4"
+
+  final val HedgehogVersion = "0.7.0"
+
+  final val EffectieVersion = "1.11.0"
+  final val LoggerFVersion  = "1.11.0"
+
+  final val PdfboxVersion     = "2.0.18"
+  final val PoiScalaVersion   = "0.20"
+  final val CatsParseVersion  = "0.3.3"
+  final val NscalaTimeVersion = "2.28.0"
+  final val FicusVersion      = "1.5.0"
+
+  final val ScalaCollectionCompatVersion = "2.4.4"
+}
+
+lazy val libs = new {
+
+  lazy val cats       = "org.typelevel" %% "cats-core"   % props.CatsVersion
+  lazy val catsEffect = "org.typelevel" %% "cats-effect" % props.CatsEffectVersion
+  lazy val newtype    = "io.estatico"   %% "newtype"     % props.NewtypeVersion
+
+  lazy val effectieCatsEffect     = "io.kevinlee"            %% "effectie-cats-effect" % props.EffectieVersion
+  lazy val loggerFCatsEffectSlf4j = List(
+    "io.kevinlee" %% "logger-f-cats-effect" % props.LoggerFVersion,
+    "io.kevinlee" %% "logger-f-log4s"       % props.LoggerFVersion
+  )
+  lazy val pdfbox                 = "org.apache.pdfbox"       % "pdfbox"               % props.PdfboxVersion
+  lazy val poiScala               = "info.folone"            %% "poi-scala"            % props.PoiScalaVersion
+  lazy val catsParse              = "org.typelevel"          %% "cats-parse"           % props.CatsParseVersion
+  lazy val nscalaTime             = "com.github.nscala-time" %% "nscala-time"          % props.NscalaTimeVersion
+  lazy val ficus                  = "com.iheart"             %% "ficus"                % props.FicusVersion
+  lazy val scalaCollectionCompat  =
+    "org.scala-lang.modules" %% "scala-collection-compat" % props.ScalaCollectionCompatVersion
+  lazy val pureconfig = "com.github.pureconfig" %% "pureconfig"      % props.PureConfigVersion
+  lazy val logback    = "ch.qos.logback"         % "logback-classic" % props.LogbackVersion
+
+}
