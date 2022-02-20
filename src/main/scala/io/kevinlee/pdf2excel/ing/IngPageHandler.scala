@@ -161,7 +161,38 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
 
       val collected = collect(lines.drop(1), Vector.empty[String])
       val content = processLine(collected)
-      TransactionDoc(header, content).some
+
+      @scala.annotation.tailrec
+      def filterOutInternalTransactionFeeRebate(
+        transactions: Vector[Transaction],
+        acc: Vector[Transaction]
+      ): Vector[Transaction] = {
+        val firstTwo = transactions.take(2).toList
+        val rest     = transactions.drop(2)
+        firstTwo match {
+          case trans1 :: trans2 :: Nil =>
+            if (trans1.details === "Intl Transaction Fee" && trans2.details === "Intl Transaction Fee Rebate")
+              if (trans1.amount.abs - trans2.amount.abs === BigDecimal(0))
+                filterOutInternalTransactionFeeRebate(rest, acc)
+              else
+                filterOutInternalTransactionFeeRebate(rest, acc :+ trans1 :+ trans2)
+            else
+              filterOutInternalTransactionFeeRebate(trans2 +: rest, acc :+ trans1)
+
+          case _ :: _ :: _ =>
+            sys.error(
+              "This is a bug in filterOutInternalTransactionFeeRebate!!! filtering should never reach this pattern."
+            )
+
+          case trans :: Nil =>
+            acc :+ trans
+
+          case Nil =>
+            acc
+        }
+      }
+
+      TransactionDoc(header, filterOutInternalTransactionFeeRebate(content, Vector.empty)).some
     }
   }
 }
