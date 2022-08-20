@@ -19,12 +19,14 @@ object Pdf2Excel {
 
   def handlePages(
     f: Seq[String] => Option[TransactionDoc],
+    postProcess: Option[TransactionDoc => TransactionDoc],
     pages: List[Seq[String]]
   ): Option[TransactionDoc] = {
     val sequence: Option[List[TransactionDoc]] = pages.map(f).filter(_.isDefined).sequence
     val maybeDoc: Option[TransactionDoc] =
       sequence.flatMap(_.reduceLeftOption((x, y) => x.copy(content = x.content ++ y.content)))
-    maybeDoc
+
+    postProcess.fold(maybeDoc)(maybeDoc.map)
   }
 
 
@@ -117,7 +119,7 @@ object Pdf2Excel {
     // TODO: get it from parameter or config file
 //    val maybeDoc: Option[TransactionDoc] = handlePages(PageHandler1, pages)
 //    val maybeDoc: Option[TransactionDoc] = handlePages(CbaPageHandler2, pages)
-    val maybeDoc: Option[TransactionDoc] = handlePages(IngPageHandler, pages)
+    val maybeDoc: Option[TransactionDoc] = handlePages(IngPageHandler, (IngPageHandler.postProcess _).some, pages)
 
     maybeDoc match {
       case Some(transactionDoc) =>
