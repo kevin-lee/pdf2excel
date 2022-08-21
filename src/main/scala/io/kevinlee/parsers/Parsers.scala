@@ -3,8 +3,7 @@ package io.kevinlee.parsers
 import cats.parse.{Parser => P, _}
 import cats.parse.Parser.{Error => ParserError}
 
-/**
-  * @author Kevin Lee
+/** @author Kevin Lee
   * @since 2018-03-04
   */
 @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing", "org.wartremover.warts.AnyVal"))
@@ -20,7 +19,7 @@ object Parsers {
   def isFailure[T](parsed: Parsed[T]): Boolean = !isSuccess(parsed)
 
   final case class NamedFunction[T, V](f: T => V, name: String) extends (T => V) {
-    def apply(t: T): V = f(t)
+    def apply(t: T): V            = f(t)
     override val toString: String = name
   }
 
@@ -28,15 +27,14 @@ object Parsers {
 
   val Digit: CharToParse =
     NamedFunction('0' to '9' contains (_: Char), "Digit")
-  val digits: P[Unit] = P.charsWhile(Digit).void
+  val digits: P[Unit]    = P.charsWhile(Digit).void
 
   val expondent: P[Unit] = (P.charIn("eE") ~ P.charIn("+-").? ~ digits).void
   val factional: P[Unit] = (P.charIn(".") ~ digits.rep).void
-  val integral: P[Unit] = ((P.char('0') | P.charIn('1' to '9')) ~ digits.?).void
+  val integral: P[Unit]  = ((P.char('0') | P.charIn('1' to '9')) ~ digits.?).void
 
   val numbers: Parser0[BigDecimal] =
-    (P.charIn("+-").? ~ integral ~ factional.? ~ expondent.?).string.
-      map(BigDecimal(_))
+    (P.charIn("+-").? ~ integral ~ factional.? ~ expondent.?).string.map(BigDecimal(_))
 
   /* ,digit
    * e.g.) ,000
@@ -44,21 +42,21 @@ object Parsers {
   val commaDigits: P[Unit] = (P.charIn(',') ~ integral.rep(min = 1)).void
 
   val monetaryNumbers: Parser0[BigDecimal] =
-    (P.charIn("+-").? ~ integral ~ commaDigits.rep ~ factional.? ~ expondent.?).string.
-      map(x => BigDecimal(x.replace(",", "")))
-
+    (P.charIn("+-").? ~ integral ~ commaDigits.rep ~ factional.? ~ expondent.?)
+      .string
+      .map(x => BigDecimal(x.replace(",", "")))
 
   val Whitespace: CharToParse =
     NamedFunction(" \t".contains(_: Char), "Whitespace")
-  val spaces: P[Unit] = P.charsWhile(Whitespace).void
+  val spaces: P[Unit]         = P.charsWhile(Whitespace).void
 
   val NonWhitespace: CharToParse =
     NamedFunction(c => !Whitespace(c), "NonWhitespace")
-  val notSpaces: P[Unit] = P.charsWhile(NonWhitespace).void
+  val notSpaces: P[Unit]         = P.charsWhile(NonWhitespace).void
 
   val NewLines: CharToParse =
     NamedFunction("\r\n" contains (_: Char), "Whitespace")
-  val newLines: P[Unit] = P.charsWhile(NewLines).void
+  val newLines: P[Unit]     = P.charsWhile(NewLines).void
 
   val AlphabetLower: CharToParse =
     NamedFunction(('a' to 'z').contains(_: Char), "AlphabetLower")
@@ -78,11 +76,9 @@ object Parsers {
 
   val alphabets: P[String] = (alphabetsLower | alphabetsUpper).rep(min = 1).string
 
-
   val hexDigit: P[Unit] = P.charIn(('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')).void
 
   val unicodeEscape: P[Unit] = (P.char('u') ~ hexDigit ~ hexDigit ~ hexDigit ~ hexDigit).void
-
 
   @SuppressWarnings(Array("org.wartremover.warts.JavaSerializable", "org.wartremover.warts.Serializable"))
   val escape: P[Any] =
