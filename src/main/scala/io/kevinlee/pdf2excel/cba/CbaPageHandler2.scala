@@ -9,22 +9,22 @@ import io.kevinlee.pdf2excel.{Header, PageHandler, Transaction, TransactionDoc}
 
 import scala.annotation.tailrec
 
-/**
-  * Since April 2019, this should be used instead of CbaPageHandler
+/** Since April 2019, this should be used instead of CbaPageHandler
   * @author Kevin Lee
   * @since 2019-04-27
   */
 case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
 
   private val transactionStart: String = "Transactions"
-  private val lastLines: List[String] = List("Interest charged on purchases", "Interest charged on cash advances")
-  private val endMessage = "Please check your transactions listed on this statement and report any discrepancy to the Bank before the payment due date. Mastercard is the registered trademark of Mastercard International Incorporated."
+  private val lastLines: List[String]  = List("Interest charged on purchases", "Interest charged on cash advances")
+  private val endMessage               =
+    "Please check your transactions listed on this statement and report any discrepancy to the Bank before the payment due date. Mastercard is the registered trademark of Mastercard International Incorporated."
 
   def buildHeader(header: String): Header = {
     val headerColumns = header.split("[\\s]+")
-    val date = headerColumns(0)
-    val details = s"${headerColumns(1)} ${headerColumns(2)}"
-    val amount = s"${headerColumns(3)} ${headerColumns(4)}"
+    val date          = headerColumns(0)
+    val details       = s"${headerColumns(1)} ${headerColumns(2)}"
+    val amount        = s"${headerColumns(3)} ${headerColumns(4)}"
     Header(date, date, details, amount)
   }
 
@@ -41,7 +41,7 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
   }
 
   private def decideYear(month: Int): Int = {
-    val now = LocalDate.now()
+    val now  = LocalDate.now()
     val year = now.getYear
     if (month === 12 && now.getMonthOfYear =!= 12)
       year - 1
@@ -57,32 +57,35 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
     } else {
       val months =
         List("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-          .zipWithIndex.map { case (x, i) => (x, i + 1) }.toMap
+          .zipWithIndex
+          .map { case (x, i) => (x, i + 1) }
+          .toMap
 
       val monthsP = P.stringIn(months.keys)
 
-      val date = (digits.rep.string ~ (spaces.rep *> monthsP.string)).map { case (day, month) =>
-        val monthValue = months(month)
-        LocalDate.parse(s"${decideYear(monthValue).toString}-${monthValue.toString}-${day.toString}")
+      val date = (digits.rep.string ~ (spaces.rep *> monthsP.string)).map {
+        case (day, month) =>
+          val monthValue = months(month)
+          LocalDate.parse(s"${decideYear(monthValue).toString}-${monthValue.toString}-${day.toString}")
       }
 
-      val lineP =
+      val lineP  =
         date ~ (spaces.rep *> P.anyChar.rep(1).string) <* P.end
       val header = lines.headOption.map(buildHeader).getOrElse(Header("", "", "", ""))
 
       @tailrec
-      def collect(lines: Seq[String],  acc: Vector[String]): Vector[String] = lines match {
+      def collect(lines: Seq[String], acc: Vector[String]): Vector[String] = lines match {
         case Nil =>
           acc
         case x :: xs =>
           val line = x.trim
           if (lastLines.exists(line.contains) || line === endMessage) {
             acc
-          } else  if (xs.take(2) === lastLines) {
+          } else if (xs.take(2) === lastLines) {
             acc :+ line
           } else {
             if (isSuccess(lineP.parse(line))) {
-              val firstFive = xs.take(5)
+              val firstFive          = xs.take(5)
               val (beforeNext, next) = firstFive.span(l => isFailure(lineP.parse(l)))
               if (beforeNext.isEmpty)
                 collect(xs, acc :+ line)
@@ -103,9 +106,9 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
       def processLine(lines: Vector[String]): Vector[Transaction] = lines.flatMap { line =>
         lineP.parse(line) match {
           case Right((_, (d, a))) =>
-            val words = a.split("[\\s]+").map(_.trim)
+            val words                    = a.split("[\\s]+").map(_.trim)
             val (details, Array(amount)) = words.splitAt(words.length - 1)
-            val filteredAmount = amount.replace(",", "")
+            val filteredAmount           = amount.replace(",", "")
             Vector(
               Transaction(
                 d,
@@ -125,7 +128,7 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
       }
 
       val collected = collect(lines.drop(1), Vector.empty)
-      val content = processLine(collected)
+      val content   = processLine(collected)
       Some(TransactionDoc(header, content))
     }
   }

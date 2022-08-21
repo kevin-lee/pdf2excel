@@ -12,7 +12,6 @@ import cats.syntax.all._
 
 import scala.util.Using
 
-
 object Pdf2Excel {
 
   final case class FromTo(from: Int, to: Int)
@@ -23,12 +22,11 @@ object Pdf2Excel {
     pages: List[Seq[String]]
   ): Option[TransactionDoc] = {
     val sequence: Option[List[TransactionDoc]] = pages.map(f).filter(_.isDefined).sequence
-    val maybeDoc: Option[TransactionDoc] =
+    val maybeDoc: Option[TransactionDoc]       =
       sequence.flatMap(_.reduceLeftOption((x, y) => x.copy(content = x.content ++ y.content)))
 
     postProcess.fold(maybeDoc)(maybeDoc.map)
   }
-
 
   def convertToText(
     inputFile: File,
@@ -45,46 +43,52 @@ object Pdf2Excel {
     }.toEither
 
   def convertOnePageToText(pdf: PDDocument, page: Int): String = {
-      val stripper = new PDFTextStripper
-      stripper.setStartPage(page)
-      stripper.setEndPage(page)
-      stripper.getText(pdf).trim
+    val stripper = new PDFTextStripper
+    stripper.setStartPage(page)
+    stripper.setEndPage(page)
+    stripper.getText(pdf).trim
   }
 
   private def writeExcel(transactionDoc: TransactionDoc, outputPath: String): Unit = {
-    val headerPosition = 2
+    val headerPosition   = 2
     val rowPositionOffet = headerPosition + 1
-    val sheetOne = Workbook {
+    val sheetOne         = Workbook {
       Set(
         Sheet(s"Credit Card ${LocalDateTime.now().toString("yyyy-MM")}") {
           Set(
             Row(headerPosition) {
-              Header.toSeq(transactionDoc.header).zipWithIndex.map { case (x, i) =>
-                StringCell(i, x)
-              }.toSet
+              Header
+                .toSeq(transactionDoc.header)
+                .zipWithIndex
+                .map {
+                  case (x, i) =>
+                    StringCell(i, x)
+                }
+                .toSet
             }
           ) ++ (for {
             (trans, i) <- transactionDoc.content.zipWithIndex
             row = Row(i + rowPositionOffet) {
-              trans match {
-                case Transaction(_, dateOfTransaction, details, amount) =>
-                  Set(
-                    StringCell(0, dateOfTransaction.toString),
-                    StringCell(1, details),
-                    NumericCell(2, amount.toDouble),
-                  )
-              }
-            }
+                    trans match {
+                      case Transaction(_, dateOfTransaction, details, amount) =>
+                        Set(
+                          StringCell(0, dateOfTransaction.toString),
+                          StringCell(1, details),
+                          NumericCell(2, amount.toDouble),
+                        )
+                    }
+                  }
           } yield row).toSet
         }
       )
     }
-    sheetOne.safeToFile(outputPath)
+    sheetOne
+      .safeToFile(outputPath)
       .fold(ex => sys.error(ex.getMessage), identity)
       .unsafePerformIO()
   }
 
-  private val FilenameAndExt = "(.+)[\\.]([^\\.]+)$".r
+  private val FilenameAndExt                                                 = "(.+)[\\.]([^\\.]+)$".r
   private def replaceFileExtension(filename: String, newExt: String): String =
     filename match {
       case FilenameAndExt(name, _) =>
@@ -94,18 +98,18 @@ object Pdf2Excel {
     }
 
   def main(args: Array[String]): Unit = {
-    val config = ConfigFactory.load()
-    val pdfConfig = config.getConfig("pdf")
+    val config        = ConfigFactory.load()
+    val pdfConfig     = config.getConfig("pdf")
     val inputFilename = pdfConfig.as[String]("path")
-    val outputDir = config.as[String]("excel.path")
-    val inputFile = new File(inputFilename)
-    val outputPath = s"$outputDir/${replaceFileExtension(inputFile.getName, "xls")}"
+    val outputDir     = config.as[String]("excel.path")
+    val inputFile     = new File(inputFilename)
+    val outputPath    = s"$outputDir/${replaceFileExtension(inputFile.getName, "xls")}"
 
     val fromTo: Option[FromTo] = for {
-        from <- pdfConfig.getAs[Int]("from")
-        to <- pdfConfig.getAs[Int]("to")
-        theFromTo = FromTo(from, to)
-      } yield theFromTo
+      from <- pdfConfig.getAs[Int]("from")
+      to   <- pdfConfig.getAs[Int]("to")
+      theFromTo = FromTo(from, to)
+    } yield theFromTo
 
     // TODO: Handle error properly
     @SuppressWarnings(Array("org.wartremover.warts.Throw"))
@@ -114,7 +118,6 @@ object Pdf2Excel {
         th => throw th,
         identity
       )
-
 
     // TODO: get it from parameter or config file
 //    val maybeDoc: Option[TransactionDoc] = handlePages(PageHandler1, pages)

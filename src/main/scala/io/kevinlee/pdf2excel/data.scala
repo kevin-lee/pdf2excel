@@ -2,8 +2,7 @@ package io.kevinlee.pdf2excel
 
 import com.github.nscala_time.time.Imports.LocalDate
 
-/**
-  * @author Kevin Lee
+/** @author Kevin Lee
   * @since 2018-09-30
   */
 trait PageHandler[A] extends (Seq[String] => Option[A])
@@ -19,12 +18,12 @@ object Header {
 
   def toSeq(header: Header): Seq[String] = header match {
     case Header(
-        _,
-        dateOfTransaction,
-        details,
-        amount,
-      ) =>
-        Vector(dateOfTransaction, details, amount)
+          _,
+          dateOfTransaction,
+          details,
+          amount,
+        ) =>
+      Vector(dateOfTransaction, details, amount)
   }
 }
 

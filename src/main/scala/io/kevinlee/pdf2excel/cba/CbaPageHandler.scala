@@ -9,8 +9,7 @@ import io.kevinlee.pdf2excel.{Header, PageHandler, Transaction, TransactionDoc}
 
 import scala.annotation.tailrec
 
-/**
-  * @author Kevin Lee
+/** @author Kevin Lee
   * @since 2018-09-30
   */
 case object CbaPageHandler extends PageHandler[TransactionDoc] {
@@ -19,10 +18,10 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
 
   def buildHeader(header: String): Header = {
     val headerColumns = header.split("[\\s]+")
-    val date = headerColumns(0)
-    val details = s"${headerColumns(1)} ${headerColumns(2)}"
-    val _ = s"${headerColumns(3)} ${headerColumns(4)}" // card number
-    val amount = s"${headerColumns(5)} ${headerColumns(6)}"
+    val date          = headerColumns(0)
+    val details       = s"${headerColumns(1)} ${headerColumns(2)}"
+    val _             = s"${headerColumns(3)} ${headerColumns(4)}" // card number
+    val amount        = s"${headerColumns(5)} ${headerColumns(6)}"
     Header(date, date, details, amount)
   }
 
@@ -39,7 +38,7 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
   }
 
   private def decideYear(month: Int): Int = {
-    val now = LocalDate.now()
+    val now  = LocalDate.now()
     val year = now.getYear
     if (month === 12 && now.getMonthOfYear =!= 12)
       year - 1
@@ -55,16 +54,19 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
     } else {
       val months: Map[String, Int] =
         List("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-          .zipWithIndex.map { case (x, i) => (x, i + 1) }.toMap
+          .zipWithIndex
+          .map { case (x, i) => (x, i + 1) }
+          .toMap
 
       val monthsP = P.stringIn(months.keys)
 
-      val date = (digits.rep.string ~ (spaces.rep *> monthsP.string)).map { case (day, month) =>
-        val monthValue = months(month)
-        LocalDate.parse(s"${decideYear(monthValue).toString}-${monthValue.toString}-${day}")
+      val date = (digits.rep.string ~ (spaces.rep *> monthsP.string)).map {
+        case (day, month) =>
+          val monthValue = months(month)
+          LocalDate.parse(s"${decideYear(monthValue).toString}-${monthValue.toString}-${day}")
       }
 
-      val lineP =
+      val lineP  =
         date ~ (spaces.rep *> P.anyChar.rep(1).string) <* P.end
       val header = lines.headOption.map(buildHeader).getOrElse(Header("", "", "", ""))
 
@@ -80,9 +82,9 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
               if (twoMoreLines.length === 2 && twoMoreLines(1).trim.startsWith("Mastercard")) {
                 processLine(s"$line ${twoMoreLines.map(_.trim).mkString(" ")}" :: rest, acc)
               } else {
-                val words = a.split("[\\s]+").map(_.trim)
+                val words                          = a.split("[\\s]+").map(_.trim)
                 val (details, Array(card, amount)) = words.splitAt(words.length - 2)
-                val filteredAmount = amount.replace(",", "")
+                val filteredAmount                 = amount.replace(",", "")
                 processLine(
                   xs,
                   acc :+ Transaction(
