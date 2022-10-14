@@ -4,7 +4,6 @@ import java.io.File
 import com.github.nscala_time.time.Imports._
 import com.typesafe.config.ConfigFactory
 import info.folone.scala.poi.{NumericCell, Row, Sheet, StringCell, Workbook}
-import io.kevinlee.pdf2excel.ing.IngPageHandler
 import net.ceedubs.ficus.Ficus._
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
@@ -121,8 +120,12 @@ object Pdf2Excel {
 
     // TODO: get it from parameter or config file
 //    val maybeDoc: Option[TransactionDoc] = handlePages(PageHandler1, pages)
-//    val maybeDoc: Option[TransactionDoc] = handlePages(CbaPageHandler2, pages)
-    val maybeDoc: Option[TransactionDoc] = handlePages(IngPageHandler, (IngPageHandler.postProcess _).some, pages)
+//    val maybeDoc: Option[TransactionDoc] = handlePages(io.kevinlee.pdf2excel.cba.CbaPageHandler2, none[TransactionDoc => TransactionDoc], pages)
+    val maybeDoc: Option[TransactionDoc] = handlePages(
+      io.kevinlee.pdf2excel.ing.IngPageHandler,
+      (io.kevinlee.pdf2excel.ing.IngPageHandler.postProcess _).some,
+      pages
+    )
 
     maybeDoc match {
       case Some(transactionDoc) =>
