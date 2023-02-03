@@ -32,8 +32,8 @@ lazy val props = new {
   final val Org            = "io.kevinlee"
   final val ProjectVersion = "0.1.0"
 
-  final val CatsVersion       = "2.6.1"
-  final val CatsEffectVersion = "2.5.1"
+  final val CatsVersion       = "2.9.0"
+  final val CatsEffectVersion = "2.5.5"
   final val PureConfigVersion = "0.16.0"
   final val LogbackVersion    = "1.2.3"
   final val NewtypeVersion    = "0.4.4"
