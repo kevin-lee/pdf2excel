@@ -3,6 +3,8 @@ package io.kevinlee.parsers
 import cats.parse.{Parser => P, _}
 import cats.parse.Parser.{Error => ParserError}
 
+import scala.annotation.nowarn
+
 /** @author Kevin Lee
   * @since 2018-03-04
   */
@@ -31,6 +33,7 @@ object Parsers {
 
   val expondent: P[Unit] = (P.charIn("eE") ~ P.charIn("+-").? ~ digits).void
   val factional: P[Unit] = (P.charIn(".") ~ digits.rep).void
+  @nowarn(value ="msg=a type was inferred to be `AnyVal`; this may indicate a programming error.")
   val integral: P[Unit]  = ((P.char('0') | P.charIn('1' to '9')) ~ digits.?).void
 
   val numbers: Parser0[BigDecimal] =
@@ -81,6 +84,7 @@ object Parsers {
   val unicodeEscape: P[Unit] = (P.char('u') ~ hexDigit ~ hexDigit ~ hexDigit ~ hexDigit).void
 
   @SuppressWarnings(Array("org.wartremover.warts.JavaSerializable", "org.wartremover.warts.Serializable"))
+  @nowarn(value = "msg=a type was inferred to be `AnyVal`; this may indicate a programming error.")
   val escape: P[Any] =
     (P.string("""\""") ~ (P.charIn("""/"\bfnrt""") | unicodeEscape)) | P.string("''").map(_ => "'")
 

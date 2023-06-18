@@ -28,7 +28,7 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
   @tailrec
   def findTransactionStart(page: Seq[String]): Seq[String] = {
     val droppedLines1 = page.dropWhile(line => line =!= transactionStart)
-    if (droppedLines1.length < 2) {
+    if (droppedLines1.lengthIs < 2) {
       Vector.empty[String]
     } else {
       val lines = droppedLines1.drop(1)
@@ -79,7 +79,7 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
           lineP.parse(line) match {
             case Right((_, (d, a))) =>
               val (twoMoreLines, rest) = xs.splitAt(2)
-              if (twoMoreLines.length === 2 && twoMoreLines(1).trim.startsWith("Mastercard")) {
+              if (twoMoreLines.length === 2 && twoMoreLines.drop(1).headOption.fold(false)(_.trim.startsWith("Mastercard"))) {
                 processLine(s"$line ${twoMoreLines.map(_.trim).mkString(" ")}" :: rest, acc)
               } else {
                 val words                          = a.split("[\\s]+").map(_.trim)

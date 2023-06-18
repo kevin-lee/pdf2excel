@@ -31,7 +31,7 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
   @tailrec
   def findTransactionStart(page: Seq[String]): Seq[String] = {
     val droppedLines1 = page.dropWhile(line => line =!= transactionStart)
-    if (droppedLines1.length < 2) {
+    if (droppedLines1.lengthIs < 2) {
       Vector.empty[String]
     } else {
       val lines = droppedLines1.drop(1)
@@ -66,7 +66,7 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
       val date = (digits.rep.string ~ (spaces.rep *> monthsP.string)).map {
         case (day, month) =>
           val monthValue = months(month)
-          LocalDate.parse(s"${decideYear(monthValue).toString}-${monthValue.toString}-${day.toString}")
+          LocalDate.parse(s"${decideYear(monthValue).toString}-${monthValue.toString}-$day")
       }
 
       val lineP  =

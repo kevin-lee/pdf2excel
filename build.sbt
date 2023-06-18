@@ -28,7 +28,7 @@ lazy val root = (project in file("."))
 
 lazy val props = new {
   //  final val ScalaVersion    = "3.0.0"
-  final val ScalaVersion        = "2.13.6"
+  final val ScalaVersion        = "2.13.11"
   final val ProjectScalaVersion = ScalaVersion
 
   final val Org            = "io.kevinlee"
@@ -36,24 +36,24 @@ lazy val props = new {
 
   final val CatsVersion       = "2.9.0"
   final val CatsEffectVersion = "2.5.5"
-  final val PureConfigVersion = "0.16.0"
-  final val LogbackVersion    = "1.2.3"
+  final val PureConfigVersion = "0.17.4"
+  final val LogbackVersion    = "1.4.8"
   final val NewtypeVersion    = "0.4.4"
 
   final val HedgehogVersion = "0.10.1"
 
-  final val EffectieVersion = "2.0.0-beta5"
-  final val LoggerFVersion  = "2.0.0-beta6"
+  final val EffectieVersion = "2.0.0-beta9"
+  final val LoggerFVersion  = "2.0.0-beta12"
 
-  val ExtrasVersion = "0.28.0"
+  val ExtrasVersion = "0.39.0"
 
-  final val PdfboxVersion     = "2.0.18"
-  final val PoiScalaVersion   = "0.20"
-  final val CatsParseVersion  = "0.3.3"
-  final val NscalaTimeVersion = "2.28.0"
-  final val FicusVersion      = "1.5.0"
+  final val PdfboxVersion     = "2.0.28"
+  final val PoiScalaVersion   = "0.23"
+  final val CatsParseVersion  = "0.3.9"
+  final val NscalaTimeVersion = "2.32.0"
+  final val FicusVersion      = "1.5.2"
 
-  final val ScalaCollectionCompatVersion = "2.4.4"
+  final val ScalaCollectionCompatVersion = "2.11.0"
 }
 
 lazy val libs = new {
@@ -73,8 +73,8 @@ lazy val libs = new {
   )
 
   lazy val extrasAll = List(
-    "io.kevinlee" %% "extras-cats"       % props.ExtrasVersion,
-    "io.kevinlee" %% "extras-refinement" % props.ExtrasVersion,
+    "io.kevinlee" %% "extras-cats"   % props.ExtrasVersion,
+    "io.kevinlee" %% "extras-render" % props.ExtrasVersion,
   )
 
   lazy val pdfbox                = "org.apache.pdfbox"       % "pdfbox"      % props.PdfboxVersion
