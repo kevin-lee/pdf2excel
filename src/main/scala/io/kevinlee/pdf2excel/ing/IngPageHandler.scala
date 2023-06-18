@@ -32,7 +32,7 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
   @tailrec
   private def findTransactionStart(page: Seq[String]): Seq[String] = {
     val droppedLines1 = page.dropWhile(line => line =!= transactionStart)
-    val lines         = if (droppedLines1.length < 2) {
+    val lines         = if (droppedLines1.lengthIs < 2) {
       @SuppressWarnings(Array("org.wartremover.warts.PlatformDefault"))
       val (_, transactionLists) =
         page.span(line =>
@@ -45,7 +45,7 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
     } else {
       droppedLines1.drop(1)
     }
-    if (lines.length < 2) {
+    if (lines.lengthIs < 2) {
       Vector.empty[String]
     } else {
       val found = lines.headOption.exists(_.trim.startsWith("Date"))

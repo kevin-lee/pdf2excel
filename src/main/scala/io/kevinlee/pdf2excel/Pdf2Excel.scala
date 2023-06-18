@@ -22,9 +22,9 @@ object Pdf2Excel {
 
   final case class FromTo(from: Int, to: Int)
 
-  def apply[F[*]: Fx: Monad: ResourceMaker: ConsoleEffect]: Pdf2Excel[F] = new Pdf2ExcelF[F]
+  def apply[F[*]: Fx: Monad: ResourceMaker]: Pdf2Excel[F] = new Pdf2ExcelF[F]
 
-  final private class Pdf2ExcelF[F[*]: Fx: Monad: ResourceMaker: ConsoleEffect] extends Pdf2Excel[F] {
+  final private class Pdf2ExcelF[F[*]: Fx: Monad: ResourceMaker] extends Pdf2Excel[F] {
 
     def handlePages(
       f: Seq[String] => Option[TransactionDoc],

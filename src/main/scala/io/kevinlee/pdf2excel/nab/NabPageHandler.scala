@@ -14,9 +14,12 @@ case object NabPageHandler extends PageHandler[TransactionDoc] {
   val transactionStart: String = "Transaction details"
 
   def buildHeader(header: Seq[String]): Header = {
-    val dateProcessed     = s"${header(0)} ${header(1)}"
-    val dateOfTransaction = s"${header(2)} ${header(3)}"
-    val rest              = header(5).split("[\\s]+")
+//    val dateProcessed     = s"${header(0)} ${header(1)}"
+    val dateProcessed     = (header.headOption |+| " ".some |+| header.drop(1).headOption).fold("")(_.trim)
+//    val dateOfTransaction = s"${header(2)} ${header(3)}"
+    val dateOfTransaction = (header.drop(2).headOption |+| " ".some |+| header.drop(3).headOption).fold("")(_.trim)
+//    val rest              = header(5).split("[\\s]+")
+    val rest              = header.drop(5).headOption.fold(Array.empty[String])(_.split("[\\s]+"))
 //    val cardNo = s"${header(4)} ${rest(0)}"
     val details           = rest(1)
     val amount            = s"${rest(2)} ${rest(3)}"

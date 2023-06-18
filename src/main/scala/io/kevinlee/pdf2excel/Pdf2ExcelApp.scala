@@ -19,7 +19,6 @@ object Pdf2ExcelApp extends IOApp.Simple {
     val outputPath    = s"$outputDir/${replaceFileExtension(inputFile.getName, "xls")}"
 
     import effectie.instances.ce2.fx._
-    import effectie.instances.console._
 
     implicit val resourceMaker: ResourceMaker[IO] = Ce2ResourceMaker.forAutoCloseable[IO]
 
