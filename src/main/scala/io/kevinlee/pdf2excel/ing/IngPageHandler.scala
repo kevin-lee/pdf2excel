@@ -133,7 +133,8 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
       def processLine(lines: Vector[String]): Vector[Transaction] = lines.flatMap { line =>
         lineP.parse(line) match {
           case Right((_, (d, a))) =>
-            val words                             = a.split("[\\s]+").map(_.trim)
+            val words = a.split("[\\s]+").map(_.trim)
+
             val (details, Array(amount, balance)) = words.splitAt(words.length - 2)
             println(s"""      a: $a
                  |  words: ${words.mkString}
@@ -156,7 +157,7 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
                 )
               )
             )
-          case Left(ParserError(_, _)) =>
+          case Left(ParserError(_, _) | _: ParserError) =>
             Vector.empty[Transaction]
         }
       }

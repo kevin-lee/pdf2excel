@@ -15,7 +15,7 @@ object Parsers {
 
   def isSuccess[T](parsed: Parsed[T]): Boolean = parsed match {
     case Right(_) => true
-    case Left(ParserError(_, _)) => false
+    case Left(ParserError(_, _) | _: ParserError) => false
   }
 
   def isFailure[T](parsed: Parsed[T]): Boolean = !isSuccess(parsed)

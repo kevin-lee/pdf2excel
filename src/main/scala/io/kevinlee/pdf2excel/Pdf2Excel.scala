@@ -3,24 +3,52 @@ package io.kevinlee.pdf2excel
 import cats._
 import cats.syntax.all._
 import com.github.nscala_time.time.Imports._
-import com.typesafe.config.Config
 import effectie.core._
 import effectie.resource.ResourceMaker
 import effectie.syntax.all._
 import info.folone.scala.poi.{NumericCell, Row, Sheet, StringCell, Workbook}
-import net.ceedubs.ficus.Ficus._
+import io.kevinlee.pdf2excel.config.Pdf2ExcelConfig
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
+import pureconfig.ConfigReader
+import pureconfig.error.CannotConvert
 
 import java.io.File
 
 trait Pdf2Excel[F[*]] {
-  def runF(pdfConfig: Config, inputFile: File, outputPath: String): F[Unit]
+  def runF(pdfConfig: Pdf2ExcelConfig, inputFile: File, outputPath: String): F[Unit]
 }
 
 object Pdf2Excel {
 
   final case class FromTo(from: Int, to: Int)
+  object FromTo {
+    implicit val fromToConfigReader: ConfigReader[FromTo] =
+      ConfigReader.fromString { s =>
+        s.split("\\s+-\\s+").toList match {
+          case from :: to :: Nil =>
+            (
+              from.toIntOption.filter(_ > 0).toRightNec("from must be positive Int"),
+              to.toIntOption.filter(_ > 0).toRightNec("to must be positive Int")
+            )
+              .parFlatMapN((from, to) =>
+                if (from <= to)
+                  FromTo(from, to).rightNec[String]
+                else
+                  "`from` value must be less than or equal to `to` value".leftNec[FromTo]
+              )
+              .leftMap(err => CannotConvert(s, "FromTo", err.mkString_("[", ", ", "]")))
+
+          case _ =>
+            CannotConvert(
+              s,
+              "FromTo",
+              "fromTo value must be two positive Int values separated by - (e.g. 1 to 10, 1 - 1, etc.)"
+            ).asLeft
+        }
+      }
+
+  }
 
   def apply[F[*]: Fx: Monad: ResourceMaker]: Pdf2Excel[F] = new Pdf2ExcelF[F]
 
@@ -103,16 +131,16 @@ object Pdf2Excel {
         .unsafePerformIO()
     }
 
-    def runF(pdfConfig: Config, inputFile: File, outputPath: String): F[Unit] = {
+    def runF(pdfConfig: Pdf2ExcelConfig, inputFile: File, outputPath: String): F[Unit] = {
 
-      val fromTo: Option[FromTo] = for {
-        from <- pdfConfig.getAs[Int]("from")
-        to   <- pdfConfig.getAs[Int]("to")
-        theFromTo = FromTo(from, to)
-      } yield theFromTo
+//      val fromTo: Option[FromTo] = for {
+//        from <- pdfConfig.getAs[Int]("from")
+//        to   <- pdfConfig.getAs[Int]("to")
+//        theFromTo = FromTo(from, to)
+//      } yield theFromTo
 
       for {
-        pages    <- convertToText(inputFile, fromTo)
+        pages    <- convertToText(inputFile, pdfConfig.pdf.fromTo)
         // TODO: get it from parameter or config file
         //    val maybeDoc: Option[TransactionDoc] = handlePages(PageHandler1, pages)
         //    val maybeDoc: Option[TransactionDoc] = handlePages(io.kevinlee.pdf2excel.cba.CbaPageHandler2, none[TransactionDoc => TransactionDoc], pages)

@@ -79,7 +79,12 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
           lineP.parse(line) match {
             case Right((_, (d, a))) =>
               val (twoMoreLines, rest) = xs.splitAt(2)
-              if (twoMoreLines.length === 2 && twoMoreLines.drop(1).headOption.fold(false)(_.trim.startsWith("Mastercard"))) {
+              if (
+                twoMoreLines.length === 2 && twoMoreLines
+                  .drop(1)
+                  .headOption
+                  .fold(false)(_.trim.startsWith("Mastercard"))
+              ) {
                 processLine(s"$line ${twoMoreLines.map(_.trim).mkString(" ")}" :: rest, acc)
               } else {
                 val words                          = a.split("[\\s]+").map(_.trim)
@@ -100,7 +105,7 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
                   )
                 )
               }
-            case Left(ParserError(_, _)) =>
+            case Left(ParserError(_, _) | _: ParserError) =>
               processLine(xs, acc)
           }
 

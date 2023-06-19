@@ -1,7 +1,7 @@
 ThisBuild / organization       := props.Org
 ThisBuild / version            := props.ProjectVersion
 ThisBuild / scalaVersion       := props.ProjectScalaVersion
-ThisBuild / crossScalaVersions := Set(props.ProjectScalaVersion, "2.13.6", "2.12.14").toList
+ThisBuild / crossScalaVersions := Set(props.ProjectScalaVersion, "2.13.11", "2.12.18").toList
 
 lazy val root = (project in file("."))
   .settings(
@@ -12,7 +12,6 @@ lazy val root = (project in file("."))
       libs.poiScala,
       libs.catsParse,
       libs.nscalaTime,
-      libs.ficus,
       libs.scalaCollectionCompat
     ) ++
       List(libs.cats, libs.catsEffect, libs.newtype) ++
@@ -51,7 +50,6 @@ lazy val props = new {
   final val PoiScalaVersion   = "0.23"
   final val CatsParseVersion  = "0.3.9"
   final val NscalaTimeVersion = "2.32.0"
-  final val FicusVersion      = "1.5.2"
 
   final val ScalaCollectionCompatVersion = "2.11.0"
 }
@@ -77,13 +75,14 @@ lazy val libs = new {
     "io.kevinlee" %% "extras-render" % props.ExtrasVersion,
   )
 
-  lazy val pdfbox                = "org.apache.pdfbox"       % "pdfbox"      % props.PdfboxVersion
-  lazy val poiScala              = "info.folone"            %% "poi-scala"   % props.PoiScalaVersion
-  lazy val catsParse             = "org.typelevel"          %% "cats-parse"  % props.CatsParseVersion
-  lazy val nscalaTime            = "com.github.nscala-time" %% "nscala-time" % props.NscalaTimeVersion
-  lazy val ficus                 = "com.iheart"             %% "ficus"       % props.FicusVersion
+  lazy val pdfbox     = "org.apache.pdfbox"       % "pdfbox"      % props.PdfboxVersion
+  lazy val poiScala   = "info.folone"            %% "poi-scala"   % props.PoiScalaVersion
+  lazy val catsParse  = "org.typelevel"          %% "cats-parse"  % props.CatsParseVersion
+  lazy val nscalaTime = "com.github.nscala-time" %% "nscala-time" % props.NscalaTimeVersion
+
   lazy val scalaCollectionCompat =
     "org.scala-lang.modules" %% "scala-collection-compat" % props.ScalaCollectionCompatVersion
+
   lazy val pureconfig = "com.github.pureconfig" %% "pureconfig"      % props.PureConfigVersion
   lazy val logback    = "ch.qos.logback"         % "logback-classic" % props.LogbackVersion
 
