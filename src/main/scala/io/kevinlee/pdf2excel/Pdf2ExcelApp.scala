@@ -1,29 +1,29 @@
 package io.kevinlee.pdf2excel
 
 import cats.effect.{IO, IOApp}
-import com.typesafe.config.ConfigFactory
+import cats.syntax.all._
+import effectie.instances.ce2.fx._
 import effectie.resource.{Ce2ResourceMaker, ResourceMaker}
-import net.ceedubs.ficus.Ficus._
+import extras.cats.syntax.all._
+import io.kevinlee.pdf2excel.config.Pdf2ExcelConfig
 
 import java.io.File
 
 object Pdf2ExcelApp extends IOApp.Simple {
 
   override def run: IO[Unit] = {
-
-    val config        = ConfigFactory.load()
-    val pdfConfig     = config.getConfig("pdf")
-    val inputFilename = pdfConfig.as[String]("path")
-    val outputDir     = config.as[String]("excel.path")
-    val inputFile     = new File(inputFilename)
-    val outputPath    = s"$outputDir/${replaceFileExtension(inputFile.getName, "xls")}"
-
-    import effectie.instances.ce2.fx._
-
     implicit val resourceMaker: ResourceMaker[IO] = Ce2ResourceMaker.forAutoCloseable[IO]
+    for {
+      config <- Pdf2ExcelConfig.load[IO].innerLeftMap(err => new RuntimeException(err.prettyPrint(2))).rethrow
 
-    val pdf2Excel = Pdf2Excel[IO]
-    pdf2Excel.runF(pdfConfig, inputFile, outputPath)
+      inputFilename = config.pdf.path
+      outputDir     = config.excel.path
+      inputFile     = new File(inputFilename)
+      outputPath    = s"$outputDir/${replaceFileExtension(inputFile.getName, "xls")}"
+
+      pdf2Excel = Pdf2Excel[IO]
+      _ <- pdf2Excel.runF(config, inputFile, outputPath)
+    } yield ()
   }
 
   private val FilenameAndExt = "(.+)[\\.]([^\\.]+)$".r

@@ -122,7 +122,7 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
                 )
               )
             )
-          case Left(ParserError(_, _)) =>
+          case Left(ParserError(_, _) | _: ParserError) =>
             Vector.empty
         }
       }
