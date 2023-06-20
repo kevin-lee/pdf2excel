@@ -1,4 +1,4 @@
-package io.kevinlee.pdf2excel
+package pdf2excel
 
 import com.github.nscala_time.time.Imports.LocalDate
 

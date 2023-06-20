@@ -1,4 +1,4 @@
-package io.kevinlee.pdf2excel
+package pdf2excel
 
 import cats._
 import cats.syntax.all._
@@ -7,7 +7,7 @@ import effectie.core._
 import effectie.resource.ResourceMaker
 import effectie.syntax.all._
 import info.folone.scala.poi.{NumericCell, Row, Sheet, StringCell, Workbook}
-import io.kevinlee.pdf2excel.config.Pdf2ExcelConfig
+import pdf2excel.config.Pdf2ExcelConfig
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
 import pureconfig.ConfigReader
@@ -143,10 +143,10 @@ object Pdf2Excel {
         pages    <- convertToText(inputFile, pdfConfig.pdf.fromTo)
         // TODO: get it from parameter or config file
         //    val maybeDoc: Option[TransactionDoc] = handlePages(PageHandler1, pages)
-        //    val maybeDoc: Option[TransactionDoc] = handlePages(io.kevinlee.pdf2excel.cba.CbaPageHandler2, none[TransactionDoc => TransactionDoc], pages)
+        //    val maybeDoc: Option[TransactionDoc] = handlePages(pdf2excel.cba.CbaPageHandler2, none[TransactionDoc => TransactionDoc], pages)
         maybeDoc <- handlePages(
-                      io.kevinlee.pdf2excel.ing.IngPageHandler,
-                      (io.kevinlee.pdf2excel.ing.IngPageHandler.postProcess _).some,
+                      pdf2excel.ing.IngPageHandler,
+                      (pdf2excel.ing.IngPageHandler.postProcess _).some,
                       pages,
                     )
         _        <- maybeDoc match {

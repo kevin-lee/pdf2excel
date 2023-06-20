@@ -1,11 +1,11 @@
-package io.kevinlee.pdf2excel
+package pdf2excel
 
 import cats.effect.{IO, IOApp}
 import cats.syntax.all._
 import effectie.instances.ce2.fx._
 import effectie.resource.{Ce2ResourceMaker, ResourceMaker}
 import extras.cats.syntax.all._
-import io.kevinlee.pdf2excel.config.Pdf2ExcelConfig
+import pdf2excel.config.Pdf2ExcelConfig
 
 import java.io.File
 
