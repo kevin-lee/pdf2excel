@@ -1,10 +1,10 @@
-package io.kevinlee.pdf2excel.nab
+package pdf2excel.nab
 
 import cats.parse.{Parser => P}
 import cats.syntax.all._
 import com.github.nscala_time.time.Imports.LocalDate
-import io.kevinlee.parsers.Parsers.{alphabets, digits, monetaryNumbers, spaces, stringChars}
-import io.kevinlee.pdf2excel.{Header, PageHandler, Transaction, TransactionDoc}
+import kevinlee.parsers.Parsers.{alphabets, digits, monetaryNumbers, spaces, stringChars}
+import pdf2excel.{Header, PageHandler, Transaction, TransactionDoc}
 
 /** @author Kevin Lee
   * @since 2018-09-30

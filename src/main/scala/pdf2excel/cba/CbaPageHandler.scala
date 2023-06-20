@@ -1,11 +1,11 @@
-package io.kevinlee.pdf2excel.cba
+package pdf2excel.cba
 
 import cats.parse.Parser.{Error => ParserError}
 import cats.parse.{Parser => P}
 import cats.syntax.all._
 import com.github.nscala_time.time.Imports.LocalDate
-import io.kevinlee.parsers.Parsers._
-import io.kevinlee.pdf2excel.{Header, PageHandler, Transaction, TransactionDoc}
+import kevinlee.parsers.Parsers._
+import pdf2excel.{Header, PageHandler, Transaction, TransactionDoc}
 
 import scala.annotation.tailrec
 

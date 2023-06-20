@@ -1,9 +1,9 @@
-package io.kevinlee.pdf2excel.config
+package pdf2excel.config
 
 import effectie.core.Fx
 import effectie.syntax.all._
-import io.kevinlee.pdf2excel.Pdf2Excel.FromTo
-import io.kevinlee.pdf2excel.config.Pdf2ExcelConfig.{ExcelConfig, PdfConfig}
+import pdf2excel.Pdf2Excel.FromTo
+import pdf2excel.config.Pdf2ExcelConfig.{ExcelConfig, PdfConfig}
 import pureconfig.ConfigReader.Result
 import pureconfig.{ConfigReader, ConfigSource}
 

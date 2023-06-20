@@ -1,4 +1,4 @@
-package io.kevinlee.parsers
+package kevinlee.parsers
 
 import cats.parse.{Parser => P, _}
 import cats.parse.Parser.{Error => ParserError}
