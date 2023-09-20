@@ -12,7 +12,7 @@ import java.io.File
 object Pdf2ExcelApp extends IOApp.Simple {
 
   override def run: IO[Unit] = {
-    implicit val resourceMaker: ResourceMaker[IO] = Ce2ResourceMaker.forAutoCloseable[IO]
+    implicit val resourceMaker: ResourceMaker[IO] = Ce2ResourceMaker.maker[IO]
     for {
       config <- Pdf2ExcelConfig.load[IO].innerLeftMap(err => new RuntimeException(err.prettyPrint(2))).rethrow
 
