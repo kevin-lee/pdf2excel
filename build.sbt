@@ -20,7 +20,8 @@ lazy val root = (project in file("."))
       libs.extrasAll ++
       List(
         libs.pureconfig,
-        libs.logback
+        libs.logback,
+        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.20.0"
       ),
     testFrameworks ~= (testFws => TestFramework("hedgehog.sbt.Framework") +: testFws),
   )
@@ -41,10 +42,10 @@ lazy val props = new {
 
   final val HedgehogVersion = "0.10.1"
 
-  final val EffectieVersion = "2.0.0-beta9"
-  final val LoggerFVersion  = "2.0.0-beta12"
+  final val EffectieVersion = "2.0.0-beta12"
+  final val LoggerFVersion  = "2.0.0-beta20"
 
-  val ExtrasVersion = "0.39.0"
+  val ExtrasVersion = "0.42.0"
 
   final val PdfboxVersion     = "2.0.28"
   final val PoiScalaVersion   = "0.23"
@@ -67,7 +68,7 @@ lazy val libs = new {
   )
   lazy val loggerFAll  = List(
     "io.kevinlee" %% "logger-f-cats"  % props.LoggerFVersion,
-    "io.kevinlee" %% "logger-f-log4s" % props.LoggerFVersion
+    "io.kevinlee" %% "logger-f-slf4j" % props.LoggerFVersion
   )
 
   lazy val extrasAll = List(
