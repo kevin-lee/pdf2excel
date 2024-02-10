@@ -28,7 +28,7 @@ lazy val root = (project in file("."))
 
 lazy val props = new {
   //  final val ScalaVersion    = "3.0.0"
-  final val ScalaVersion        = "2.13.11"
+  final val ScalaVersion        = "2.13.12"
   final val ProjectScalaVersion = ScalaVersion
 
   final val Org            = "io.kevinlee"
@@ -42,10 +42,10 @@ lazy val props = new {
 
   final val HedgehogVersion = "0.10.1"
 
-  final val EffectieVersion = "2.0.0-beta12"
-  final val LoggerFVersion  = "2.0.0-beta20"
+  final val EffectieVersion = "2.0.0-beta14"
+  final val LoggerFVersion  = "2.0.0-beta24"
 
-  val ExtrasVersion = "0.42.0"
+  val ExtrasVersion = "0.44.0"
 
   final val PdfboxVersion     = "2.0.28"
   final val PoiScalaVersion   = "0.23"
