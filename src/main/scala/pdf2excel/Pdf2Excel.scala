@@ -55,9 +55,9 @@ object Pdf2Excel {
   final private class Pdf2ExcelF[F[*]: Fx: Monad: ResourceMaker] extends Pdf2Excel[F] {
 
     def handlePages(
-      f: Seq[String] => Option[TransactionDoc],
+      f: List[String] => Option[TransactionDoc],
       postProcess: Option[TransactionDoc => TransactionDoc],
-      pages: List[Seq[String]]
+      pages: List[List[String]]
     ): F[Option[TransactionDoc]] = {
       val sequence: Option[List[TransactionDoc]] = pages.map(f).filter(_.isDefined).sequence
 

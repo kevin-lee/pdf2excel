@@ -29,10 +29,10 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
   }
 
   @tailrec
-  def findTransactionStart(page: Seq[String]): Seq[String] = {
+  def findTransactionStart(page: List[String]): List[String] = {
     val droppedLines1 = page.dropWhile(line => line =!= transactionStart)
     if (droppedLines1.lengthIs < 2) {
-      Vector.empty[String]
+      List.empty[String]
     } else {
       val lines = droppedLines1.drop(1)
       val found = lines.headOption.exists(_.trim.startsWith("Date"))
@@ -49,8 +49,10 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
       year
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.Nothing", "org.wartremover.warts.Any"))
-  def apply(page: Seq[String]): Option[TransactionDoc] = {
+  @SuppressWarnings(
+    Array("org.wartremover.warts.Nothing", "org.wartremover.warts.Any", "org.wartremover.warts.ListAppend")
+  )
+  def apply(page: List[String]): Option[TransactionDoc] = {
     val lines = findTransactionStart(page)
     if (lines.isEmpty) {
       None
@@ -74,7 +76,7 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
       val header = lines.headOption.map(buildHeader).getOrElse(Header("", "", "", ""))
 
       @tailrec
-      def collect(lines: Seq[String], acc: Vector[String]): Vector[String] = lines match {
+      def collect(lines: List[String], acc: List[String]): List[String] = lines match {
         case Nil =>
           acc
         case x :: xs =>
@@ -103,7 +105,7 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
 
       }
 
-      def processLine(lines: Vector[String]): Vector[Transaction] = lines.flatMap { line =>
+      def processLine(lines: List[String]): List[Transaction] = lines.flatMap { line =>
         lineP.parse(line) match {
           case Right((_, (d, a))) =>
             val words                    = a.split("[\\s]+").map(_.trim)
@@ -127,7 +129,7 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
         }
       }
 
-      val collected = collect(lines.drop(1), Vector.empty)
+      val collected = collect(lines.drop(1), List.empty)
       val content   = processLine(collected)
       Some(TransactionDoc(header, content))
     }
