@@ -26,7 +26,7 @@ case object NabPageHandler extends PageHandler[TransactionDoc] {
     Header(dateProcessed, dateOfTransaction, details, amount)
   }
 
-  def apply(page: Seq[String]): Option[TransactionDoc] = {
+  def apply(page: List[String]): Option[TransactionDoc] = {
     val lines = page.dropWhile(line => line =!= transactionStart)
     if (lines.isEmpty) {
       None
@@ -45,7 +45,7 @@ case object NabPageHandler extends PageHandler[TransactionDoc] {
           .drop(7)
           .foldLeft(Vector.empty[Transaction]) { (acc, x) =>
             lineP.parse(x.trim) match {
-              case Right((_, (((dateProcessed, dateOfTransaction), cardNo), detailsAndAmount))) =>
+              case Right((_, (((dateProcessed, dateOfTransaction), cardNo @ _), detailsAndAmount))) =>
                 val splitted = detailsAndAmount.split("[\\s]+")
                 val last     = splitted.last
                 monetaryNumbers.parse(last) match {

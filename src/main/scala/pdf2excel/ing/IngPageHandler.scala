@@ -30,7 +30,7 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
   }
 
   @tailrec
-  private def findTransactionStart(page: Seq[String]): Seq[String] = {
+  private def findTransactionStart(page: List[String]): List[String] = {
     val droppedLines1 = page.dropWhile(line => line =!= transactionStart)
     val lines         = if (droppedLines1.lengthIs < 2) {
       @SuppressWarnings(Array("org.wartremover.warts.PlatformDefault"))
@@ -46,15 +46,17 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
       droppedLines1.drop(1)
     }
     if (lines.lengthIs < 2) {
-      Vector.empty[String]
+      List.empty[String]
     } else {
       val found = lines.headOption.exists(_.trim.startsWith("Date"))
       if (found) lines else findTransactionStart(lines)
     }
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.Nothing", "org.wartremover.warts.Any"))
-  def apply(page: Seq[String]): Option[TransactionDoc] = {
+  @SuppressWarnings(
+    Array("org.wartremover.warts.Nothing", "org.wartremover.warts.Any", "org.wartremover.warts.ListAppend")
+  )
+  def apply(page: List[String]): Option[TransactionDoc] = {
     val lines = findTransactionStart(page)
     if (lines.isEmpty) {
       None
@@ -69,7 +71,7 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
       val header = lines.headOption.map(buildHeader).getOrElse(Header("", "", "", ""))
 
       @tailrec
-      def collect(lines: Seq[String], acc: Vector[String]): Vector[String] = lines match {
+      def collect(lines: List[String], acc: List[String]): List[String] = lines match {
         case Nil =>
           acc
         case x :: xs =>
@@ -116,9 +118,9 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
                         next.exists(_.contains(endMessage))
                     )
                   ) {
-                    acc :+ (line +: validBeforeNext.toVector).mkString(" ")
+                    acc :+ (line +: validBeforeNext).mkString(" ")
                   } else {
-                    collect(next ++ xs.drop(5), acc :+ (line +: validBeforeNext.toVector).mkString(" "))
+                    collect(next ++ xs.drop(5), acc :+ (line +: validBeforeNext).mkString(" "))
                   }
                 }
               } else {
@@ -130,7 +132,7 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
       }
 
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-      def processLine(lines: Vector[String]): Vector[Transaction] = lines.flatMap { line =>
+      def processLine(lines: List[String]): List[Transaction] = lines.flatMap { line =>
         lineP.parse(line) match {
           case Right((_, (d, a))) =>
             val words = a.split("[\\s]+").map(_.trim)
@@ -162,7 +164,7 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
         }
       }
 
-      val collected = collect(lines.drop(1), Vector.empty[String])
+      val collected = collect(lines.drop(1), List.empty[String])
       val content   = processLine(collected)
 
       TransactionDoc(header, content).some

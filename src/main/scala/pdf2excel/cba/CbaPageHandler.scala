@@ -26,10 +26,10 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
   }
 
   @tailrec
-  def findTransactionStart(page: Seq[String]): Seq[String] = {
+  def findTransactionStart(page: List[String]): List[String] = {
     val droppedLines1 = page.dropWhile(line => line =!= transactionStart)
     if (droppedLines1.lengthIs < 2) {
-      Vector.empty[String]
+      List.empty[String]
     } else {
       val lines = droppedLines1.drop(1)
       val found = lines.headOption.exists(_.trim.startsWith("Date"))
@@ -46,8 +46,10 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
       year
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.Nothing", "org.wartremover.warts.Any"))
-  def apply(page: Seq[String]): Option[TransactionDoc] = {
+  @SuppressWarnings(
+    Array("org.wartremover.warts.Nothing", "org.wartremover.warts.Any", "org.wartremover.warts.ListAppend")
+  )
+  def apply(page: List[String]): Option[TransactionDoc] = {
     val lines = findTransactionStart(page)
     if (lines.isEmpty) {
       None
@@ -71,7 +73,7 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
       val header = lines.headOption.map(buildHeader).getOrElse(Header("", "", "", ""))
 
       @tailrec
-      def processLine(lines: Seq[String], acc: Seq[Transaction]): Seq[Transaction] = lines match {
+      def processLine(lines: List[String], acc: List[Transaction]): List[Transaction] = lines match {
         case Nil =>
           acc
         case x :: xs =>
@@ -85,11 +87,11 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
                   .headOption
                   .fold(false)(_.trim.startsWith("Mastercard"))
               ) {
-                processLine(s"$line ${twoMoreLines.map(_.trim).mkString(" ")}" :: rest, acc)
+                processLine(s"$line ${twoMoreLines.map(_.trim).mkString(" ")}" +: rest, acc)
               } else {
-                val words                          = a.split("[\\s]+").map(_.trim)
-                val (details, Array(card, amount)) = words.splitAt(words.length - 2)
-                val filteredAmount                 = amount.replace(",", "")
+                val words                              = a.split("[\\s]+").map(_.trim)
+                val (details, Array(card @ _, amount)) = words.splitAt(words.length - 2)
+                val filteredAmount                     = amount.replace(",", "")
                 processLine(
                   xs,
                   acc :+ Transaction(
@@ -111,7 +113,7 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
 
       }
 
-      val content = processLine(lines.drop(1), Vector.empty)
+      val content = processLine(lines.drop(1), List.empty)
       Some(TransactionDoc(header, content))
     }
   }
