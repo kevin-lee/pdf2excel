@@ -33,7 +33,7 @@ object Parsers {
 
   val expondent: P[Unit] = (P.charIn("eE") ~ P.charIn("+-").? ~ digits).void
   val factional: P[Unit] = (P.charIn(".") ~ digits.rep).void
-  @nowarn(value ="msg=a type was inferred to be `AnyVal`; this may indicate a programming error.")
+  @nowarn(value = "msg=a type was inferred to be `AnyVal`; this may indicate a programming error.")
   val integral: P[Unit]  = ((P.char('0') | P.charIn('1' to '9')) ~ digits.?).void
 
   val numbers: Parser0[BigDecimal] =
