@@ -76,10 +76,12 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
           acc
         case x :: xs =>
           val line = x.trim
-          println(s"""line: $line
-               | [2]: ${xs.take(2).toString}
-               | [5]: ${xs.take(5).toString}
-               |""".stripMargin)
+          println(
+            show"""line: $line
+                  | [2]: ${xs.take(2)}
+                  | [5]: ${xs.take(5)}
+                  |""".stripMargin
+          )
           if (lastLines.exists(line.contains) || line.contains(endMessage)) {
             acc
           } else {
@@ -98,9 +100,9 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
                   collect(xs, acc :+ line)
                 else {
                   println(
-                    s"""beforeNext: ${beforeNext.toString}
-                       |      next: ${next.toString}
-                       |""".stripMargin
+                    show"""beforeNext: $beforeNext
+                          |      next: $next
+                          |""".stripMargin
                   )
 
                   val validBeforeNext = beforeNext.takeWhile { x =>
