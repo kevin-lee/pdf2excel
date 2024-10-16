@@ -1,15 +1,16 @@
 package pdf2excel
 
-import cats._
-import cats.syntax.all._
-import com.github.nscala_time.time.Imports._
-import effectie.core._
+import cats.*
+import cats.syntax.all.*
+import com.github.nscala_time.time.Imports.*
+import effectie.core.*
 import effectie.resource.ResourceMaker
-import effectie.syntax.all._
+import effectie.syntax.all.*
 import info.folone.scala.poi.{NumericCell, Row, Sheet, StringCell, Workbook}
 import pdf2excel.config.Pdf2ExcelConfig
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
+import org.joda.time.format.ISODateTimeFormat
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
 
@@ -115,7 +116,7 @@ object Pdf2Excel {
                       trans match {
                         case Transaction(_, dateOfTransaction, details, amount) =>
                           Set(
-                            StringCell(0, dateOfTransaction.toString),
+                            StringCell(0, ISODateTimeFormat.date().print(dateOfTransaction)),
                             StringCell(1, details),
                             NumericCell(2, amount.toDouble),
                           )
