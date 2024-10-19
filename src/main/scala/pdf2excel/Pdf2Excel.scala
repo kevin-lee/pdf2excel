@@ -7,49 +7,18 @@ import effectie.core.*
 import effectie.resource.ResourceMaker
 import effectie.syntax.all.*
 import info.folone.scala.poi.{NumericCell, Row, Sheet, StringCell, Workbook}
-import pdf2excel.config.Pdf2ExcelConfig
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
 import org.joda.time.format.ISODateTimeFormat
-import pureconfig.ConfigReader
-import pureconfig.error.CannotConvert
+import refined4s.compat.RefinedCompatAllTypes
 
 import java.io.File
 
 trait Pdf2Excel[F[*]] {
-  def runF(pdfConfig: Pdf2ExcelConfig, inputFile: File, outputPath: String): F[Unit]
+  def runF(inputFile: File, outputPath: String, fromTo: Args.Pdf.FromTo): F[Unit]
 }
 
-object Pdf2Excel {
-
-  final case class FromTo(from: Int, to: Int)
-  object FromTo {
-    implicit val fromToConfigReader: ConfigReader[FromTo] =
-      ConfigReader.fromString { s =>
-        s.split("\\s+-\\s+").toList match {
-          case from :: to :: Nil =>
-            (
-              from.toIntOption.filter(_ > 0).toRightNec("from must be positive Int"),
-              to.toIntOption.filter(_ > 0).toRightNec("to must be positive Int")
-            )
-              .parFlatMapN((from, to) =>
-                if (from <= to)
-                  FromTo(from, to).rightNec[String]
-                else
-                  "`from` value must be less than or equal to `to` value".leftNec[FromTo]
-              )
-              .leftMap(err => CannotConvert(s, "FromTo", err.mkString_("[", ", ", "]")))
-
-          case _ =>
-            CannotConvert(
-              s,
-              "FromTo",
-              "fromTo value must be two positive Int values separated by - (e.g. 1 to 10, 1 - 1, etc.)"
-            ).asLeft
-        }
-      }
-
-  }
+object Pdf2Excel extends RefinedCompatAllTypes {
 
   def apply[F[*]: Fx: Monad: ResourceMaker]: Pdf2Excel[F] = new Pdf2ExcelF[F]
 
@@ -70,17 +39,17 @@ object Pdf2Excel {
 
     def convertToText(
       inputFile: File,
-      fromTo: Option[FromTo]
+      fromTo: Args.Pdf.FromTo,
     ): F[List[List[String]]] =
       ResourceMaker[F]
         .forAutoCloseable(effectOf[F](PDDocument.load(inputFile)))
         .use { pdf =>
           val (startPage, endPage) =
-            fromTo.fold((1, pdf.getNumberOfPages))(fromTo => (fromTo.from, fromTo.to))
+            (fromTo.from.fold(PosInt(1))(_.value), fromTo.to.fold(PosInt.unsafeFrom(pdf.getNumberOfPages))(_.value))
 
           effectOf[F](
             (for {
-              page <- startPage to endPage
+              page <- startPage.value to endPage.value
               onePage = convertOnePageToText(pdf, page)
             } yield onePage).map(_.split("[\\n]+").toList).toList
           )
@@ -132,16 +101,9 @@ object Pdf2Excel {
         .unsafePerformIO()
     }
 
-    def runF(pdfConfig: Pdf2ExcelConfig, inputFile: File, outputPath: String): F[Unit] = {
-
-//      val fromTo: Option[FromTo] = for {
-//        from <- pdfConfig.getAs[Int]("from")
-//        to   <- pdfConfig.getAs[Int]("to")
-//        theFromTo = FromTo(from, to)
-//      } yield theFromTo
-
+    def runF(inputFile: File, outputPath: String, fromTo: Args.Pdf.FromTo): F[Unit] =
       for {
-        pages    <- convertToText(inputFile, pdfConfig.pdf.fromTo)
+        pages    <- convertToText(inputFile, fromTo)
         // TODO: get it from parameter or config file
         //    val maybeDoc: Option[TransactionDoc] = handlePages(PageHandler1, pages)
         //    val maybeDoc: Option[TransactionDoc] = handlePages(pdf2excel.cba.CbaPageHandler2, none[TransactionDoc => TransactionDoc], pages)
@@ -165,6 +127,5 @@ object Pdf2Excel {
 
       } yield ()
 
-    }
   }
 }
