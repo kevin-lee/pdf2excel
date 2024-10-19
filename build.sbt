@@ -20,11 +20,14 @@ lazy val root = (project in file("."))
       libs.catsParse,
       libs.nscalaTime,
       libs.scalaCollectionCompat,
+      libs.kittens,
     ) ++
+      libs.refined(scalaVersion.value) ++
       List(libs.cats, libs.catsEffect) ++
       libs.effectieAll ++
       libs.loggerFAll ++
       libs.extrasAll ++
+      libs.declineAll ++
       List(
         libs.pureconfig(scalaVersion.value),
         libs.logback,
@@ -41,8 +44,15 @@ lazy val props = new {
   final val Org            = "io.kevinlee"
   final val ProjectVersion = "0.1.0"
 
+  val Refined4sVersion = "0.19.0"
+
+  val RefinedVersion = "0.11.2"
+
   final val CatsVersion       = "2.10.0"
   final val CatsEffectVersion = "3.5.4"
+
+  val KittensVersion = "3.4.0"
+
   final val PureConfigVersion = "0.17.7"
   final val LogbackVersion    = "1.4.8"
   final val NewtypeVersion    = "0.4.4"
@@ -66,8 +76,29 @@ lazy val props = new {
 
 lazy val libs = new {
 
+  def refined(scalaVersion: String): List[ModuleID] =
+    if (scalaVersion.startsWith("3."))
+      refined4sAll ++ List("io.kevinlee" %% "refined4s-refined-compat-scala3" % props.Refined4sVersion)
+    else
+      ("io.estatico" %% "newtype" % "0.4.4") :: refinedAll ++
+        List("io.kevinlee" %% "refined4s-refined-compat-scala2" % props.Refined4sVersion)
+
+  lazy val refined4sAll =
+    List(
+      "io.kevinlee" %% "refined4s-core"          % props.Refined4sVersion,
+      "io.kevinlee" %% "refined4s-cats"          % props.Refined4sVersion,
+      "io.kevinlee" %% "refined4s-extras-render" % props.Refined4sVersion,
+    )
+
+  lazy val refinedAll = List(
+    "eu.timepit" %% "refined"      % props.RefinedVersion,
+    "eu.timepit" %% "refined-cats" % props.RefinedVersion,
+  )
+
   lazy val cats       = "org.typelevel" %% "cats-core"   % props.CatsVersion
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % props.CatsEffectVersion
+
+  lazy val kittens = "org.typelevel" %% "kittens" % props.KittensVersion
 
   lazy val effectieAll = List(
     "io.kevinlee" %% "effectie-core"         % props.EffectieVersion,
@@ -100,4 +131,8 @@ lazy val libs = new {
 
   lazy val logback = "ch.qos.logback" % "logback-classic" % props.LogbackVersion
 
+  lazy val declineAll = List(
+    "com.monovore" %% "decline"        % props.DeclineVersion,
+    "com.monovore" %% "decline-effect" % props.DeclineVersion,
+  )
 }
