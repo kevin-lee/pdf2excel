@@ -10,6 +10,8 @@ import effectie.syntax.all.*
 import pdf2excel.Args.{Excel, Pdf}
 import pdf2excel.Args.Pdf.FromTo
 import refined4s.compat.RefinedCompatAllTypes
+import extras.strings.syntax.all.*
+import extras.render.syntax.*
 
 import java.nio.file.Path
 
@@ -20,6 +22,18 @@ object Pdf2ExcelApp
       version = "0.1.0"
     )
     with RefinedCompatAllTypes {
+
+  val pdfStatementTypeOpt: Opts[Pdf.StatementType] = Opts
+    .option[String](
+      long = "pdf-type",
+      short = "s",
+      metavar = "pdf-statement-type",
+      help =
+        s"The PDF statement type. Available types: ${Args.Pdf.StatementType.allStatementTypes.map(_.render).commaAnd}"
+    )
+    .mapValidated { pdfStatementTypeString =>
+      Pdf.StatementType.from(pdfStatementTypeString).toValidatedNel
+    }
 
   val pdfPathOpt: Opts[Pdf.Path] = Opts
     .option[Path](long = "pdf-path", short = "p", metavar = "path-to-pdf-file", help = "The path to the PDF file")
@@ -65,26 +79,27 @@ object Pdf2ExcelApp
     .map(Args.Excel.Path(_))
 
   override def main: Opts[IO[ExitCode]] = {
-    (pdfPathOpt, pdfFromOpt, pdfToOpt, excelPathOpt).mapN { (pdfPath, from, to, excelPath) =>
-      (for {
-        fromTo <- (from, to) match {
-                    case (Some(fromValue), Some(toValue)) =>
-                      if (fromValue.value.value <= toValue.value.value) {
-                        IO.pure(Args.Pdf.FromTo(from, to))
-                      } else {
-                        IO.raiseError(
-                          new IllegalArgumentException(
-                            show"Invalid from and to. from value should be less than or equal to to. [from: $from, to: $to]"
+    (pdfStatementTypeOpt, pdfPathOpt, pdfFromOpt, pdfToOpt, excelPathOpt).mapN {
+      (pdfStatementType, pdfPath, from, to, excelPath) =>
+        (for {
+          fromTo <- (from, to) match {
+                      case (Some(fromValue), Some(toValue)) =>
+                        if (fromValue.value.value <= toValue.value.value) {
+                          IO.pure(Args.Pdf.FromTo(from, to))
+                        } else {
+                          IO.raiseError(
+                            new IllegalArgumentException(
+                              show"Invalid from and to. from value should be less than or equal to to. [from: $from, to: $to]"
+                            )
                           )
-                        )
-                      }
+                        }
 
-                    case (from, to) =>
-                      IO.pure(Args.Pdf.FromTo(from, to))
-                  }
+                      case (from, to) =>
+                        IO.pure(Args.Pdf.FromTo(from, to))
+                    }
 
-        _ <- runApp(Args.Pdf(pdfPath, fromTo), Args.Excel(excelPath))
-      } yield ExitCode.Success).handleErrorWith(err => IO.println(err) *> ExitCode.Error.pure[IO])
+          _ <- runApp(Args.Pdf(pdfStatementType, pdfPath, fromTo), Args.Excel(excelPath))
+        } yield ExitCode.Success).handleErrorWith(err => IO.println(err) *> ExitCode.Error.pure[IO])
 
     }
   }
@@ -99,7 +114,7 @@ object Pdf2ExcelApp
                     )
 
       pdf2Excel = Pdf2Excel[IO]
-      _ <- pdf2Excel.runF(inputFile.value, outputPath, pdf.fromTo)
+      _ <- pdf2Excel.runF(pdf.statementType, inputFile.value, outputPath, pdf.fromTo)
     } yield ()
   }
 
