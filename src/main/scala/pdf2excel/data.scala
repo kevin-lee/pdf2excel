@@ -5,7 +5,9 @@ import com.github.nscala_time.time.Imports.LocalDate
 /** @author Kevin Lee
   * @since 2018-09-30
   */
-trait PageHandler[A] extends (List[String] => Option[A])
+trait PageHandler[A] extends (List[String] => Option[A]) {
+  def postProcess(a: A): A
+}
 
 final case class Header(
   dateProcessed: String,

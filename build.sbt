@@ -111,6 +111,7 @@ lazy val libs = new {
   )
 
   lazy val extrasAll = List(
+    "io.kevinlee" %% "extras-string" % props.ExtrasVersion,
     "io.kevinlee" %% "extras-cats"   % props.ExtrasVersion,
     "io.kevinlee" %% "extras-render" % props.ExtrasVersion,
   )

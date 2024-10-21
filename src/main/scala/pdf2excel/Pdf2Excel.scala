@@ -10,12 +10,13 @@ import info.folone.scala.poi.{NumericCell, Row, Sheet, StringCell, Workbook}
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
 import org.joda.time.format.ISODateTimeFormat
+import pdf2excel.Args.Pdf
 import refined4s.compat.RefinedCompatAllTypes
 
 import java.io.File
 
 trait Pdf2Excel[F[*]] {
-  def runF(inputFile: File, outputPath: String, fromTo: Args.Pdf.FromTo): F[Unit]
+  def runF(statementType: Pdf.StatementType, inputFile: File, outputPath: String, fromTo: Args.Pdf.FromTo): F[Unit]
 }
 
 object Pdf2Excel extends RefinedCompatAllTypes {
@@ -101,22 +102,23 @@ object Pdf2Excel extends RefinedCompatAllTypes {
         .unsafePerformIO()
     }
 
-    def runF(inputFile: File, outputPath: String, fromTo: Args.Pdf.FromTo): F[Unit] =
+    def runF(statementType: Pdf.StatementType, inputFile: File, outputPath: String, fromTo: Args.Pdf.FromTo): F[Unit] =
       for {
-        pages    <- convertToText(inputFile, fromTo)
+        pages <- convertToText(inputFile, fromTo)
         // TODO: get it from parameter or config file
         //    val maybeDoc: Option[TransactionDoc] = handlePages(PageHandler1, pages)
         //    val maybeDoc: Option[TransactionDoc] = handlePages(pdf2excel.cba.CbaPageHandler2, none[TransactionDoc => TransactionDoc], pages)
+        pageHandler = getPageHandler(statementType)
         maybeDoc <- handlePages(
-                      pdf2excel.ing.IngPageHandler,
-                      (pdf2excel.ing.IngPageHandler.postProcess _).some,
+                      pageHandler,
+                      (pageHandler.postProcess _).some,
                       pages,
                     )
         _        <- maybeDoc match {
                       case Some(transactionDoc) =>
                         putStrLn(
                           s"""maybeDoc: ${transactionDoc.toString}
-                               |""".stripMargin
+                             |""".stripMargin
                         ) *>
                           putStrLn(s"Write to $outputPath") *>
                           effectOf(writeExcel(transactionDoc, outputPath))
@@ -126,6 +128,13 @@ object Pdf2Excel extends RefinedCompatAllTypes {
                     }
 
       } yield ()
+
+    private def getPageHandler(statementType: Pdf.StatementType): PageHandler[TransactionDoc] = statementType match {
+      case Pdf.StatementType.Cba => pdf2excel.cba.CbaPageHandler
+      case Pdf.StatementType.Cba2 => pdf2excel.cba.CbaPageHandler2
+      case Pdf.StatementType.Ing => pdf2excel.ing.IngPageHandler
+      case Pdf.StatementType.Nab => pdf2excel.nab.NabPageHandler
+    }
 
   }
 }

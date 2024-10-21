@@ -117,4 +117,6 @@ case object CbaPageHandler extends PageHandler[TransactionDoc] {
       Some(TransactionDoc(header, content))
     }
   }
+
+  override def postProcess(transactionDoc: TransactionDoc): TransactionDoc = transactionDoc
 }
