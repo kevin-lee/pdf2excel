@@ -96,8 +96,7 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
               if (isSuccess(lineP.parse(line))) {
                 val firstFive          = xs.take(5)
                 val (beforeNext, next) = firstFive.span(l => isFailure(lineP.parse(l)))
-                if (beforeNext.isEmpty)
-                  collect(xs, acc :+ line)
+                if (beforeNext.isEmpty) collect(xs, acc :+ line)
                 else {
                   println(
                     show"""beforeNext: $beforeNext
@@ -173,7 +172,7 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
     }
   }
 
-  def postProcess(transactionDoc: TransactionDoc): TransactionDoc = {
+  override val getPostProcess: Option[TransactionDoc => TransactionDoc] = { (transactionDoc: TransactionDoc) =>
 
     @scala.annotation.tailrec
     def filterOutInternalTransactionFeeRebate(
@@ -208,5 +207,6 @@ object IngPageHandler extends PageHandler[TransactionDoc] {
     transactionDoc.copy(content =
       filterOutInternalTransactionFeeRebate(transactionDoc.content.toVector, Vector.empty[Transaction])
     )
-  }
+  }.some
+
 }

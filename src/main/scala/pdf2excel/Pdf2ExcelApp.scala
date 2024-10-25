@@ -7,11 +7,13 @@ import com.monovore.decline.effect.*
 import effectie.instances.ce3.fx.ioFx
 import effectie.resource.{Ce3ResourceMaker, ResourceMaker}
 import effectie.syntax.all.*
-import pdf2excel.Args.{Excel, Pdf}
-import pdf2excel.Args.Pdf.FromTo
-import refined4s.compat.RefinedCompatAllTypes
-import extras.strings.syntax.all.*
 import extras.render.syntax.*
+import extras.strings.syntax.all.*
+import loggerf.instances.cats.logF
+import loggerf.logger.{CanLog, Slf4JLogger}
+import pdf2excel.Args.Pdf.FromTo
+import pdf2excel.Args.{Excel, Pdf}
+import refined4s.compat.RefinedCompatAllTypes
 
 import java.nio.file.Path
 
@@ -22,6 +24,8 @@ object Pdf2ExcelApp
       version = "0.1.0"
     )
     with RefinedCompatAllTypes {
+
+  implicit val canLog: CanLog = Slf4JLogger.slf4JCanLog("pdf2excel")
 
   val pdfStatementTypeOpt: Opts[Pdf.StatementType] = Opts
     .option[String](

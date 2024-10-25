@@ -7,6 +7,8 @@ import effectie.core.*
 import effectie.resource.ResourceMaker
 import effectie.syntax.all.*
 import info.folone.scala.poi.{NumericCell, Row, Sheet, StringCell, Workbook}
+import loggerf.core.Log
+import loggerf.syntax.all.*
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
 import org.joda.time.format.ISODateTimeFormat
@@ -21,9 +23,9 @@ trait Pdf2Excel[F[*]] {
 
 object Pdf2Excel extends RefinedCompatAllTypes {
 
-  def apply[F[*]: Fx: Monad: ResourceMaker]: Pdf2Excel[F] = new Pdf2ExcelF[F]
+  def apply[F[*]: Fx: Log: Monad: ResourceMaker]: Pdf2Excel[F] = new Pdf2ExcelF[F]
 
-  final private class Pdf2ExcelF[F[*]: Fx: Monad: ResourceMaker] extends Pdf2Excel[F] {
+  final private class Pdf2ExcelF[F[*]: Fx: Log: Monad: ResourceMaker] extends Pdf2Excel[F] {
 
     def handlePages(
       f: List[String] => Option[TransactionDoc],
@@ -104,14 +106,14 @@ object Pdf2Excel extends RefinedCompatAllTypes {
 
     def runF(statementType: Pdf.StatementType, inputFile: File, outputPath: String, fromTo: Args.Pdf.FromTo): F[Unit] =
       for {
-        pages <- convertToText(inputFile, fromTo)
+        pages <- convertToText(inputFile, fromTo).log(pages => info(pages.map(_.map("'" + _ + "'").mkString("\n")).mkString("\n")))
         // TODO: get it from parameter or config file
         //    val maybeDoc: Option[TransactionDoc] = handlePages(PageHandler1, pages)
         //    val maybeDoc: Option[TransactionDoc] = handlePages(pdf2excel.cba.CbaPageHandler2, none[TransactionDoc => TransactionDoc], pages)
         pageHandler = getPageHandler(statementType)
         maybeDoc <- handlePages(
                       pageHandler,
-                      (pageHandler.postProcess _).some,
+                      pageHandler.getPostProcess,
                       pages,
                     )
         _        <- maybeDoc match {
@@ -124,7 +126,11 @@ object Pdf2Excel extends RefinedCompatAllTypes {
                           effectOf(writeExcel(transactionDoc, outputPath))
 
                       case None =>
-                        errorOf(new RuntimeException(s"No document found at ${inputFile.getCanonicalPath}"))
+                        errorOf(
+                          new RuntimeException(
+                            s"The file found at ${inputFile.getCanonicalPath}, but it was not readable PDF file with the given handler."
+                          )
+                        )
                     }
 
       } yield ()
