@@ -33,6 +33,7 @@ object Args {
       case object Cba2 extends StatementType
       case object Ing extends StatementType
       case object Nab extends StatementType
+      case object Latitude28DegreeGlobal extends StatementType
 
       def cba: StatementType  = StatementType.Cba
       def cba2: StatementType = StatementType.Cba2
@@ -41,7 +42,9 @@ object Args {
 
       def nab: StatementType = StatementType.Nab
 
-      def allStatementTypes: List[StatementType] = List(cba, cba2, ing, nab)
+      def latitude28DegreeGlobal: StatementType = StatementType.Latitude28DegreeGlobal
+
+      def allStatementTypes: List[StatementType] = List(cba, cba2, ing, nab, latitude28DegreeGlobal)
 
       implicit val eqStatementType: Eq[StatementType]     = Eq.fromUniversalEquals
       implicit val showStatementType: Show[StatementType] = Show.fromToString
@@ -54,6 +57,7 @@ object Args {
         case "cbc2" => Right(StatementType.cba2)
         case "ing" => Right(StatementType.ing)
         case "nab" => Right(StatementType.nab)
+        case "latitude28" => Right(StatementType.latitude28DegreeGlobal)
         case unsupported =>
           Left(
             s"Unsupported statement type [given type: $unsupported]. The supported ones are ${allStatementTypes.map(_.render).commaAnd}."
