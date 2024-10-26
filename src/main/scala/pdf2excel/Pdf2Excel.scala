@@ -62,7 +62,7 @@ object Pdf2Excel extends RefinedCompatAllTypes {
       val stripper = new PDFTextStripper
       stripper.setStartPage(page)
       stripper.setEndPage(page)
-      stripper.getText(pdf).trim
+      stripper.getText(pdf)
     }
 
     private def writeExcel(transactionDoc: TransactionDoc, outputPath: String): Unit = {
@@ -106,7 +106,9 @@ object Pdf2Excel extends RefinedCompatAllTypes {
 
     def runF(statementType: Pdf.StatementType, inputFile: File, outputPath: String, fromTo: Args.Pdf.FromTo): F[Unit] =
       for {
-        pages <- convertToText(inputFile, fromTo).log(pages => info(pages.map(_.map("'" + _ + "'").mkString("\n")).mkString("\n")))
+        pages <- convertToText(inputFile, fromTo).log(pages =>
+                   info(pages.map(_.map("'" + _ + "'").mkString("\n")).mkString("\n"))
+                 )
         // TODO: get it from parameter or config file
         //    val maybeDoc: Option[TransactionDoc] = handlePages(PageHandler1, pages)
         //    val maybeDoc: Option[TransactionDoc] = handlePages(pdf2excel.cba.CbaPageHandler2, none[TransactionDoc => TransactionDoc], pages)
@@ -140,6 +142,7 @@ object Pdf2Excel extends RefinedCompatAllTypes {
       case Pdf.StatementType.Cba2 => pdf2excel.cba.CbaPageHandler2
       case Pdf.StatementType.Ing => pdf2excel.ing.IngPageHandler
       case Pdf.StatementType.Nab => pdf2excel.nab.NabPageHandler
+      case Pdf.StatementType.Latitude28DegreeGlobal => pdf2excel.latitude.Latitude28DegreeGlobalPageHandler
     }
 
   }

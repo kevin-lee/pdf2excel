@@ -29,6 +29,7 @@ object Args {
       case Cba2
       case Ing
       case Nab
+      case Latitude28DegreeGlobal
     }
     object StatementType {
 
@@ -39,7 +40,9 @@ object Args {
 
       def nab: StatementType = StatementType.Nab
 
-      def allStatementTypes: List[StatementType] = List(cba, cba2, ing, nab)
+      def latitude28DegreeGlobal: StatementType = StatementType.Latitude28DegreeGlobal
+
+      def allStatementTypes: List[StatementType] = List(cba, cba2, ing, nab, latitude28DegreeGlobal)
 
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       given renderStatementType: Render[StatementType] = Render.render(_.toString.toLowerCase(Locale.ENGLISH))
@@ -49,6 +52,7 @@ object Args {
         case "cbc2" => Right(StatementType.cba2)
         case "ing" => Right(StatementType.ing)
         case "nab" => Right(StatementType.nab)
+        case "latitude28" => Right(StatementType.latitude28DegreeGlobal)
         case unsupported =>
           Left(
             s"Unsupported statement type [given type: $unsupported]. The supported ones are ${allStatementTypes.map(_.render).commaAnd}."
