@@ -1,12 +1,13 @@
 package pdf2excel
 
+import cats.syntax.all.*
 import com.github.nscala_time.time.Imports.LocalDate
 
 /** @author Kevin Lee
   * @since 2018-09-30
   */
 trait PageHandler[A] extends (List[String] => Option[A]) {
-  def getPostProcess: Option[A => A]
+  def getPostProcess: Option[A => A] = none
 }
 
 final case class Header(

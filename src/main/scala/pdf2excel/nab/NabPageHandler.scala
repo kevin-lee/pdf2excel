@@ -63,5 +63,4 @@ case object NabPageHandler extends PageHandler[TransactionDoc] {
     }
   }
 
-  override val getPostProcess: Option[TransactionDoc => TransactionDoc] = none
 }
