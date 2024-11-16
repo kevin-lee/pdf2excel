@@ -135,5 +135,4 @@ case object CbaPageHandler2 extends PageHandler[TransactionDoc] {
     }
   }
 
-  override val getPostProcess: Option[TransactionDoc => TransactionDoc] = none
 }
