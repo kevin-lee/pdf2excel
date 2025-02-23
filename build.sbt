@@ -1,7 +1,7 @@
 ThisBuild / organization       := props.Org
 ThisBuild / version            := props.ProjectVersion
 ThisBuild / scalaVersion       := props.ProjectScalaVersion
-ThisBuild / crossScalaVersions := Set(props.ProjectScalaVersion, "2.13.15").toList
+ThisBuild / crossScalaVersions := Set(props.ProjectScalaVersion, "2.13.16").toList
 
 lazy val root = (project in file("."))
   .settings(
@@ -31,7 +31,7 @@ lazy val root = (project in file("."))
       List(
         libs.pureconfig(scalaVersion.value),
         libs.logback,
-        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.20.0"
+        libs.log4JToSlf4J
       ),
     testFrameworks ~= (testFws => TestFramework("hedgehog.sbt.Framework") +: testFws),
   )
@@ -47,30 +47,32 @@ lazy val props = new {
 
   val RefinedVersion = "0.11.2"
 
-  final val CatsVersion       = "2.10.0"
-  final val CatsEffectVersion = "3.5.4"
+  val CatsVersion       = "2.13.0"
+  val CatsEffectVersion = "3.5.7"
 
   val KittensVersion = "3.4.0"
 
-  final val PureConfigVersion = "0.17.7"
-  final val LogbackVersion    = "1.4.8"
-  final val NewtypeVersion    = "0.4.4"
+  val PureConfigVersion    = "0.17.8"
+  val LogbackVersion       = "1.5.16"
+  final val NewtypeVersion = "0.4.4"
 
   final val HedgehogVersion = "0.10.1"
 
-  final val EffectieVersion = "2.0.0-beta14"
-  final val LoggerFVersion  = "2.0.0-beta24"
+  val EffectieVersion = "2.0.0"
+  val LoggerFVersion  = "2.1.2"
+
+  val Log4JToSlf4JVersion = "2.24.3"
 
   val ExtrasVersion = "0.44.0"
 
-  final val PdfboxVersion     = "2.0.28"
-  final val PoiScalaVersion   = "0.23"
-  final val CatsParseVersion  = "0.3.9"
-  final val NscalaTimeVersion = "2.32.0"
+  val PdfboxVersion     = "2.0.33"
+  val PoiScalaVersion   = "0.25"
+  val CatsParseVersion  = "1.1.0"
+  val NscalaTimeVersion = "3.0.0"
 
-  final val ScalaCollectionCompatVersion = "2.12.0"
+  val ScalaCollectionCompatVersion = "2.13.0"
 
-  val DeclineVersion = "2.4.1"
+  val DeclineVersion = "2.5.0"
 }
 
 lazy val libs = new {
@@ -135,4 +137,6 @@ lazy val libs = new {
     "com.monovore" %% "decline"        % props.DeclineVersion,
     "com.monovore" %% "decline-effect" % props.DeclineVersion,
   )
+
+  lazy val log4JToSlf4J = "org.apache.logging.log4j" % "log4j-to-slf4j" % props.Log4JToSlf4JVersion
 }
