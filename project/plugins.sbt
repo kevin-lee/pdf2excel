@@ -1,6 +1,6 @@
 //addSbtPlugin("ch.epfl.lamp" % "sbt-dotty" % "0.3.4")
 
-addSbtPlugin("org.wartremover" % "sbt-wartremover" % "3.2.2")
+addSbtPlugin("org.wartremover" % "sbt-wartremover" % "3.3.0")
 
 val SbtDevOopsVersion = "3.1.0"
 addSbtPlugin("io.kevinlee" % "sbt-devoops-scala"     % SbtDevOopsVersion)
